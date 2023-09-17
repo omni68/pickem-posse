@@ -31,16 +31,52 @@ class Weeks extends React.Component
 	handleChangeBettor = (event: SelectChangeEvent) => {
 		this.setState((state) => (Object.assign(state, { 
 			bettor: event.target.value,
-			bettor_games: this.props.data.games.filter((g) => g.game_bettor === event.target.value && g.week_sheet_index === state.week)
+			bettor_games: this.getGamesByBettorAndWeek(event.target.value, state.week)
 		})));
 	};
 
 	handleChangeWeek = (event: SelectChangeEvent) => {
 		this.setState((state) => (Object.assign(state, { 
 			week: event.target.value,
-			bettor_games: this.props.data.games.filter((g) => g.week_sheet_index === event.target.value && g.game_bettor === state.bettor)
+			bettor_games: this.getGamesByBettorAndWeek(state.bettor, event.target.value)
 		})));
 	};
+
+	getYourBetInfo = (g, ah) => {
+		if(g.game_bettor_pick !== ah) { return ""; }
+
+		const isHomerPick = g.game_bettor_pick === this.home;
+		const isGameOver = !!g.game_winner;
+		const pick = isHomerPick ? g.game_home : g.game_away;
+		let msg = isHomerPick 
+			? `${g.game_dollars_home} to win ${g.game_dollars_away}`
+			: `${g.game_dollars_away} to win ${g.game_dollars_home}`;
+
+		if(isGameOver) 
+		{ 
+			msg = `your payout was ${g.game_bettor_dollars_payout}`;
+		}
+
+  		return `${pick} (${msg})`;
+	};
+
+	getYourBetInfoAway = (g) => { return this.getYourBetInfo(g, "away"); }
+	getYourBetInfoHome = (g) => { return this.getYourBetInfo(g, "home"); }
+
+	getBettorsForGame = (g, ha) => {
+		return this.props.data.games
+			.filter((ga) => 
+				ga.game_week_index === g.game_week_index 
+				&& ga.week_sheet_index === g.week_sheet_index
+				&& ga.game_bettor_pick === ha)
+			.map((ga) => ga.game_bettor.split(" ")[0])
+			.sort()
+			.join(", ");
+	}
+
+	getGamesByBettorAndWeek = (b, w) => {
+		return this.props.data.games.filter((g) => g.game_bettor === b && g.week_sheet_index === w);
+	}
 
  	render()
  	{
@@ -71,7 +107,7 @@ class Weeks extends React.Component
 			          label="Week"
 			          onChange={this.handleChangeWeek}
 			        >
-			          {this.props.data.weeks.map((w, i) => <MenuItem value={w.index} key={i}>{w.name}</MenuItem>)}
+			          {this.props.data.weeks.map((w, i) => <MenuItem value={w.index} key={i}>{w.name} ({this.getGamesByBettorAndWeek(this.state.bettor,w.index)[0].week_payout})</MenuItem>)}
 			        </Select>
 			      </FormControl>
 			    </Grid>
@@ -85,7 +121,7 @@ class Weeks extends React.Component
 					            <TableCell>{g.game_date_display} @ {g.game_time_display ?? "Time TBD"}</TableCell>
 					            <TableCell>Score</TableCell>
 					            <TableCell>Your Bet</TableCell>
-					            <TableCell>Num of Bettors</TableCell>
+					            <TableCell>Bettors</TableCell>
 					          </TableRow>
 					        </TableHead>
 					        <TableBody>
@@ -95,17 +131,25 @@ class Weeks extends React.Component
 					            >
 					              <TableCell>{g.game_away} {g.game_home_spread > 0 ? `(-${g.game_home_spread})` : ""}</TableCell>
 					              <TableCell>{g.game_score_away ?? "--"}</TableCell>
-					              <TableCell>{g.game_bettor_pick === "away" ? `${g.game_away} (${g.game_dollars_away} to win ${g.game_dollars_home})` : ""}</TableCell>
-					              <TableCell>{g.game_bettors_away} of {g.game_bettors_away + g.game_bettors_home}</TableCell>
+					              <TableCell>{this.getYourBetInfoAway(g)}</TableCell>
+					              <TableCell>
+				              			{g.game_bettors_away} of {g.game_bettors_away + g.game_bettors_home}
+				              			<p>{this.getBettorsForGame(g, "away")}</p>
+			              			</TableCell>
 					            </TableRow>
 					            <TableRow
 					              key={String(i) + g.game_home}
 					              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
 					            >
-					              <TableCell>{g.game_home} {g.game_home_spread < 0 ? `(${g.game_home_spread})` : ""}</TableCell>
-					              <TableCell>{g.game_score_home ?? "--"}</TableCell>
-					              <TableCell>{g.game_bettor_pick === "home" ? `${g.game_home} (${g.game_dollars_home} to win ${g.game_dollars_away})` : ""}</TableCell>
-					              <TableCell>{g.game_bettors_home} of {g.game_bettors_away + g.game_bettors_home}</TableCell>
+									<TableCell>
+										{g.game_home} {g.game_home_spread < 0 ? `(${g.game_home_spread})` : ""}
+									</TableCell>
+									<TableCell>{g.game_score_home ?? "--"}</TableCell>
+									<TableCell>{this.getYourBetInfoHome(g)}</TableCell>
+									<TableCell>
+										{g.game_bettors_home} of {g.game_bettors_away + g.game_bettors_home}
+										<p>{this.getBettorsForGame(g, "home")}</p>
+									</TableCell>
 					            </TableRow>
 					        </TableBody>
 					      </Table>
