@@ -15,6 +15,9 @@ import Paper from '@mui/material/Paper';
 
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+
 class Weeks extends React.Component 
 {
 	constructor(props) {
@@ -26,6 +29,8 @@ class Weeks extends React.Component
 			bettor_games: this.props.data.games.filter((g) => g.game_bettor === default_bettor && g.week_sheet_index === default_week),
 			week: default_week,
 		};
+		this.home = "home";
+		this.away = "away";
 	}
 
 	handleChangeBettor = (event: SelectChangeEvent) => {
@@ -47,21 +52,27 @@ class Weeks extends React.Component
 
 		const isHomerPick = g.game_bettor_pick === this.home;
 		const isGameOver = !!g.game_winner;
-		const pick = isHomerPick ? g.game_home : g.game_away;
+		let pick = isHomerPick ? g.game_home : g.game_away;
+
+		if(g.is_game_of_the_week){ pick += isHomerPick ? ` ${g.game_bettor_home_prediction} - ${g.game_bettor_away_prediction}` : ` ${g.game_bettor_away_prediction} - ${g.game_bettor_home_prediction}`; }
+
 		let msg = isHomerPick 
 			? `${g.game_dollars_home} to win ${g.game_dollars_away}`
 			: `${g.game_dollars_away} to win ${g.game_dollars_home}`;
 
 		if(isGameOver) 
 		{ 
-			msg = `your payout was ${g.game_bettor_dollars_payout}`;
+			msg = `payout ${g.game_bettor_dollars_payout}`;
+			if(g.week_bettor_jackpot_earnings !== "$0"){
+				msg += ` plus JACKPOT WIN ${g.week_bettor_jackpot_earnings}`;
+			}
 		}
 
   		return `${pick} (${msg})`;
 	};
 
-	getYourBetInfoAway = (g) => { return this.getYourBetInfo(g, "away"); }
-	getYourBetInfoHome = (g) => { return this.getYourBetInfo(g, "home"); }
+	getYourBetInfoAway = (g) => { return this.getYourBetInfo(g, this.away); }
+	getYourBetInfoHome = (g) => { return this.getYourBetInfo(g, this.home); }
 
 	getBettorsForGame = (g, ha) => {
 		return this.props.data.games
@@ -112,7 +123,13 @@ class Weeks extends React.Component
 			      </FormControl>
 			    </Grid>
 
-			    {this.state.bettor_games.map((g, i) => 
+			    {this.state.bettor_games.map((g, i) => <>
+			    	{ g.is_game_of_the_week
+			    		? <Grid xs={12}><Stack direction="row" spacing={1}>
+			    			<Chip label={"Game of the Week"} variant="outlined" />
+			    			<Chip label={`Jackpot ${g.week_jackpot_total}`} variant="outlined" /></Stack></Grid>
+			    		: ""
+		    		}
 			    	<Grid xs={12}>
 				    	<TableContainer component={Paper} key={i}>
 					      <Table class={g.game_winner ? "game-over" : "game-pending"} sx={{ minWidth: 650 }} aria-label="simple table">
@@ -126,7 +143,7 @@ class Weeks extends React.Component
 					        </TableHead>
 					        <TableBody>
 					            <TableRow
-					              key={String(i) + g.game_away}
+					              key={`${String(i)}-${this.away}`}
 					              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
 					            >
 					              <TableCell>{g.game_away} {g.game_home_spread > 0 ? `(-${g.game_home_spread})` : ""}</TableCell>
@@ -134,11 +151,11 @@ class Weeks extends React.Component
 					              <TableCell>{this.getYourBetInfoAway(g)}</TableCell>
 					              <TableCell>
 				              			{g.game_bettors_away} of {g.game_bettors_away + g.game_bettors_home}
-				              			<p>{this.getBettorsForGame(g, "away")}</p>
+				              			<p>{this.getBettorsForGame(g, this.away)}</p>
 			              			</TableCell>
 					            </TableRow>
 					            <TableRow
-					              key={String(i) + g.game_home}
+					              key={`${String(i)}-${this.home}`}
 					              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
 					            >
 									<TableCell>
@@ -148,14 +165,14 @@ class Weeks extends React.Component
 									<TableCell>{this.getYourBetInfoHome(g)}</TableCell>
 									<TableCell>
 										{g.game_bettors_home} of {g.game_bettors_away + g.game_bettors_home}
-										<p>{this.getBettorsForGame(g, "home")}</p>
+										<p>{this.getBettorsForGame(g, this.home)}</p>
 									</TableCell>
 					            </TableRow>
 					        </TableBody>
 					      </Table>
 					    </TableContainer>
 				    </Grid>
-	    		)}
+	    		</>)}
 			</Grid>
 		);
 	}
