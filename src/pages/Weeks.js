@@ -57,8 +57,8 @@ class Weeks extends React.Component
 		if(g.is_game_of_the_week){ pick += isHomerPick ? ` ${g.game_bettor_home_prediction} - ${g.game_bettor_away_prediction}` : ` ${g.game_bettor_away_prediction} - ${g.game_bettor_home_prediction}`; }
 
 		let msg = isHomerPick 
-			? `${g.game_dollars_home} to win ${g.game_dollars_away}`
-			: `${g.game_dollars_away} to win ${g.game_dollars_home}`;
+			? `win or lose ${g.game_dollars_away}`
+			: `win or lose ${g.game_dollars_home}`;
 
 		if(isGameOver) 
 		{ 
