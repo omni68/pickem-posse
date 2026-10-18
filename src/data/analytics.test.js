@@ -163,3 +163,62 @@ test('finds each player’s best and worst weekly payouts and ignores empty peri
     worstPayoutWeek: 'Week 2',
   });
 });
+
+test('finds each player’s closest finalized Game-of-the-Week score prediction', () => {
+  const scoreboard = {
+    data: {
+      players: [
+        { player: cell('Alex'), quitter: cell(''), totalWinnings: cell(0), totalPayout: cell(0) },
+        { player: cell('Bailey'), quitter: cell(''), totalWinnings: cell(0), totalPayout: cell(0) },
+        { player: cell('Casey'), quitter: cell(''), totalWinnings: cell(0), totalPayout: cell(0) },
+      ],
+    },
+  };
+  const weeks = [
+    {
+      title: 'Week 1',
+      data: {
+        games: [{ isGameOfTheWeek: true, winner: cell('Away'), scoreAway: cell(21), scoreHome: cell(17), picks: [] }],
+        bettors: [
+          { player: cell('Alex'), awayPrediction: cell(20), homePrediction: cell(17) },
+          { player: cell('Bailey'), awayPrediction: cell(14), homePrediction: cell(10) },
+          { player: cell('Casey'), awayPrediction: cell(''), homePrediction: cell('') },
+        ],
+      },
+    },
+    {
+      title: 'Week 2',
+      data: {
+        games: [{ isGameOfTheWeek: true, winner: cell('Home'), scoreAway: cell(30), scoreHome: cell(27), picks: [] }],
+        bettors: [
+          { player: cell('Alex'), awayPrediction: cell(28), homePrediction: cell(24) },
+          { player: cell('Bailey'), awayPrediction: cell(29), homePrediction: cell(27) },
+        ],
+      },
+    },
+    {
+      title: 'Week 3',
+      data: {
+        games: [{ isGameOfTheWeek: true, winner: cell(''), scoreAway: cell(''), scoreHome: cell(''), picks: [] }],
+        bettors: [{ player: cell('Alex'), awayPrediction: cell(0), homePrediction: cell(0) }],
+      },
+    },
+  ];
+
+  const analytics = buildPlayerAnalytics(scoreboard, weeks);
+  expect(analytics.find((player) => player.player === 'Alex')).toMatchObject({
+    closestExactScore: 1,
+    closestExactScoreWeek: 'Week 1',
+    closestExactScoreAwayPrediction: 20,
+    closestExactScoreHomePrediction: 17,
+    closestExactScoreAwayActual: 21,
+    closestExactScoreHomeActual: 17,
+  });
+  expect(analytics.find((player) => player.player === 'Bailey')).toMatchObject({
+    closestExactScore: 1,
+    closestExactScoreWeek: 'Week 2',
+  });
+  expect(analytics.find((player) => player.player === 'Casey')).toMatchObject({
+    closestExactScore: null,
+  });
+});

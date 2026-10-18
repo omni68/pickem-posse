@@ -1,7 +1,14 @@
 {
-  "short_name": "Pick'em Posse",
-  "name": "Pick'em Posse Scoreboard",
-  "icons": [],
+  "short_name": "PICK'EM POSSE",
+  "name": "PICK'EM POSSE Scoreboard",
+  "icons": [
+    {
+      "src": "assets/loading-posse.png",
+      "sizes": "640x640",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#18233A",

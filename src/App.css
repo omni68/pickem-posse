@@ -136,6 +136,15 @@ html {
   border-radius: 999px;
 }
 
+.app-ready {
+  animation: app-ready 240ms ease-out both;
+}
+
+@keyframes app-ready {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes posse-hustle {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
   50% { transform: translateY(-13px) rotate(1.2deg); }
@@ -177,6 +186,10 @@ html {
   .loading-art-shadow,
   .loading-callout,
   .loading-message {
+    animation: none;
+  }
+
+  .app-ready {
     animation: none;
   }
 

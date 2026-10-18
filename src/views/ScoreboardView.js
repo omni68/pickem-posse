@@ -39,15 +39,44 @@ const standingsMetrics = [
   { key: 'correctPickPercentage', label: 'Correct Pick %' },
   { key: 'bestPickPercentage', label: 'Best Pick %' },
   { key: 'worstPickPercentage', label: 'Worst Pick %' },
+  { key: 'closestExactScore', label: 'Closest Exact Score' },
 ];
 
 const defaultOrderForMetric = (metricKey) => (
-  metricKey === 'worstPickPercentage' || metricKey === 'worstPayout' ? 'asc' : 'desc'
+  metricKey === 'worstPickPercentage'
+  || metricKey === 'worstPayout'
+  || metricKey === 'closestExactScore'
+    ? 'asc'
+    : 'desc'
 );
 
 const currencyValue = (value) => formatCurrency({ raw: value, display: String(value) });
 
 function MetricValue({ metric, player }) {
+  if (metric.key === 'closestExactScore') {
+    const difference = player.closestExactScore;
+    return (
+      <Box>
+        <Typography fontWeight={800}>
+          {difference == null ? '—' : `${difference} ${difference === 1 ? 'point' : 'points'} off`}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+          {difference == null ? 'No finalized predictions' : player.closestExactScoreWeek}
+        </Typography>
+        {difference != null && (
+          <>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              Pick (A–H): {player.closestExactScoreAwayPrediction}–{player.closestExactScoreHomePrediction}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              Actual (A–H): {player.closestExactScoreAwayActual}–{player.closestExactScoreHomeActual}
+            </Typography>
+          </>
+        )}
+      </Box>
+    );
+  }
+
   if (metric.key === 'bestPayout' || metric.key === 'worstPayout') {
     const best = metric.key === 'bestPayout';
     const payout = player[metric.key];
@@ -162,7 +191,18 @@ function StandingsTable({ rows }) {
               <TableRow>
                 <TableCell sx={{ width: { xs: 54, sm: 70 }, px: { xs: 1, sm: 2 } }}>Rank</TableCell>
                 <TableCell sx={{ px: { xs: 1, sm: 2 } }}>Player</TableCell>
-                <TableCell align="right" sx={{ width: { xs: 118, sm: 180 }, px: { xs: 1, sm: 2 } }}>{metric.label}</TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    width: {
+                      xs: metric.key === 'closestExactScore' ? 142 : 118,
+                      sm: metric.key === 'closestExactScore' ? 220 : 180,
+                    },
+                    px: { xs: 1, sm: 2 },
+                  }}
+                >
+                  {metric.label}
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
-import App from './App';
+import App, { MINIMUM_LOADING_MS } from './App';
 import theme from './theme';
 
 const workbook = {
@@ -47,10 +47,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   jest.restoreAllMocks();
 });
 
 test('shows the animated posse while workbook data is loading', async () => {
+  jest.useFakeTimers();
   let resolveFetch;
   global.fetch = jest.fn(() => new Promise((resolve) => { resolveFetch = resolve; }));
 
@@ -63,8 +65,19 @@ test('shows the animated posse while workbook data is loading', async () => {
   await act(async () => {
     resolveFetch({ ok: true, json: async () => workbook });
   });
+  expect(screen.getByRole('status', { name: "Loading the Pick'em Posse scoreboard" })).toBeInTheDocument();
+
+  await act(async () => {
+    jest.advanceTimersByTime(MINIMUM_LOADING_MS - 1);
+  });
+  expect(screen.getByRole('status', { name: "Loading the Pick'em Posse scoreboard" })).toBeInTheDocument();
+
+  await act(async () => {
+    jest.advanceTimersByTime(1);
+  });
   expect(await screen.findByRole('heading', { name: 'Scoreboard' })).toBeInTheDocument();
   expect(screen.getByText("PICK'EM POSSE")).toBeInTheDocument();
+  jest.useRealTimers();
 });
 
 test('loads the scoreboard and exposes workbook navigation', async () => {
@@ -82,8 +95,9 @@ test('loads the scoreboard and exposes workbook navigation', async () => {
   expect(screen.getByRole('option', { name: 'Worst Payout $' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Best Pick %' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Worst Pick %' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('option', { name: 'Worst Payout $' }));
-  expect(screen.getByRole('columnheader', { name: 'Worst Payout $' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Closest Exact Score' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('option', { name: 'Closest Exact Score' }));
+  expect(screen.getByRole('columnheader', { name: 'Closest Exact Score' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Sort descending' })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: 'Open workbook navigation' }));

@@ -2,6 +2,11 @@ import { cellNumber } from './formatters';
 
 const normalizedName = (value) => String(value || '').trim().toLowerCase();
 
+const populatedNumber = (value) => {
+  if (!value || (value.raw === '' && !value.display)) return null;
+  return cellNumber(value);
+};
+
 export const rankSortedRows = (rows, metricKey) => {
   let rank = 0;
   let previousValue;
@@ -38,11 +43,43 @@ export const buildPlayerAnalytics = (scoreboardTab, weekTabs = [], earningsTab =
       worstPickWeek: '',
       worstWeekCorrectPicks: 0,
       worstWeekTotalPicks: 0,
+      closestExactScore: null,
+      closestExactScoreWeek: '',
+      closestExactScoreAwayPrediction: null,
+      closestExactScoreHomePrediction: null,
+      closestExactScoreAwayActual: null,
+      closestExactScoreHomeActual: null,
     });
   }
 
   for (const tab of weekTabs) {
     const weeklyMetrics = new Map();
+
+    const featuredGame = (tab?.data?.games || []).find((game) => game.isGameOfTheWeek);
+    const awayActual = populatedNumber(featuredGame?.scoreAway);
+    const homeActual = populatedNumber(featuredGame?.scoreHome);
+    const featuredGameIsFinal = Boolean(featuredGame?.winner?.display)
+      && awayActual != null
+      && homeActual != null;
+
+    if (featuredGameIsFinal) {
+      for (const bettor of tab?.data?.bettors || []) {
+        const metrics = metricsByPlayer.get(normalizedName(bettor.player?.display));
+        const awayPrediction = populatedNumber(bettor.awayPrediction);
+        const homePrediction = populatedNumber(bettor.homePrediction);
+        if (!metrics || awayPrediction == null || homePrediction == null) continue;
+
+        const difference = Math.abs(awayPrediction - awayActual) + Math.abs(homePrediction - homeActual);
+        if (metrics.closestExactScore == null || difference < metrics.closestExactScore) {
+          metrics.closestExactScore = difference;
+          metrics.closestExactScoreWeek = tab.title;
+          metrics.closestExactScoreAwayPrediction = awayPrediction;
+          metrics.closestExactScoreHomePrediction = homePrediction;
+          metrics.closestExactScoreAwayActual = awayActual;
+          metrics.closestExactScoreHomeActual = homeActual;
+        }
+      }
+    }
 
     for (const game of tab?.data?.games || []) {
       const winner = normalizedName(game.winner?.display);

@@ -10,6 +10,7 @@ import './App.css';
 
 const dataUrl = `${process.env.PUBLIC_URL || ''}/data/workbook.json`;
 const loadingArtUrl = `${process.env.PUBLIC_URL || ''}/assets/loading-posse.png`;
+export const MINIMUM_LOADING_MS = 700;
 const loadingMessages = [
   'Rounding up the picks…',
   'Arguing with the spreadsheet…',
@@ -83,9 +84,11 @@ function TabRoute({ workbook }) {
 function AppContent() {
   const [workbook, setWorkbook] = useState(null);
   const [error, setError] = useState('');
+  const [minimumLoadingElapsed, setMinimumLoadingElapsed] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
+    const loadingTimer = window.setTimeout(() => setMinimumLoadingElapsed(true), MINIMUM_LOADING_MS);
     fetch(dataUrl, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`Workbook request failed (${response.status})`);
@@ -95,13 +98,20 @@ function AppContent() {
       .catch((reason) => {
         if (reason.name !== 'AbortError') setError(reason.message);
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      window.clearTimeout(loadingTimer);
+    };
   }, []);
 
   const firstTabPath = useMemo(
     () => (workbook?.tabs?.[0] ? `/tab/${workbook.tabs[0].slug}` : '/'),
     [workbook],
   );
+
+  if (!minimumLoadingElapsed) {
+    return <LoadingState />;
+  }
 
   if (error) {
     return (
@@ -118,10 +128,12 @@ function AppContent() {
   }
 
   return (
-    <Routes>
-      <Route path="/tab/:tabSlug" element={<TabRoute workbook={workbook} />} />
-      <Route path="*" element={<Navigate to={firstTabPath} replace />} />
-    </Routes>
+    <Box className="app-ready">
+      <Routes>
+        <Route path="/tab/:tabSlug" element={<TabRoute workbook={workbook} />} />
+        <Route path="*" element={<Navigate to={firstTabPath} replace />} />
+      </Routes>
+    </Box>
   );
 }
 
