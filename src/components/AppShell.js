@@ -50,22 +50,22 @@ export default function AppShell({ workbook, currentTab, onTabChange, children }
         }}
       >
         <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
-            <Box>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'flex-start' }, gap: { xs: 1.25, sm: 2 } }}>
+            <Box sx={{ minWidth: 0 }}>
               <Typography variant="overline" sx={{ opacity: 0.72, letterSpacing: '0.16em', fontWeight: 800 }}>
                 PICK&apos;EM POSSE
               </Typography>
-              <Typography variant="h3" component="h1" sx={{ mt: 0.5, fontSize: { xs: '2rem', sm: '2.65rem' } }}>
+              <Typography variant="h3" component="h1" sx={{ mt: 0.5, fontSize: { xs: '1.85rem', sm: '2.65rem' }, overflowWrap: 'anywhere' }}>
                 {currentTab.title}
               </Typography>
               <Typography variant="body2" sx={{ mt: 1, opacity: 0.72 }}>{generatedLabel}</Typography>
             </Box>
-            <Chip label={`${workbook.tabs.length} sheets`} sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'inherit', mt: 0.5 }} />
+            <Chip label={`${workbook.tabs.length} sheets`} sx={{ alignSelf: 'flex-start', flexShrink: 0, bgcolor: 'rgba(255,255,255,0.12)', color: 'inherit', mt: { sm: 0.5 } }} />
           </Box>
         </Container>
       </Box>
 
-      <Container maxWidth="lg" component="main" sx={{ mt: { xs: -4, sm: -5 } }}>{children}</Container>
+      <Container maxWidth="lg" component="main" sx={{ width: '100%', minWidth: 0, px: { xs: 1.5, sm: 3 }, mt: { xs: -4, sm: -5 } }}>{children}</Container>
 
       <Fab
         color="secondary"
@@ -102,7 +102,7 @@ export default function AppShell({ workbook, currentTab, onTabChange, children }
       >
         <Box sx={{ p: 3, pt: 'max(28px, env(safe-area-inset-top))' }}>
           <Typography variant="overline" color="secondary.main" sx={{ letterSpacing: '0.14em', fontWeight: 800 }}>Workbook</Typography>
-          <Typography variant="h5" sx={{ mt: 0.5 }}>{workbook.source.title}</Typography>
+          <Typography variant="h5" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{workbook.source.title}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Choose a sheet to explore.</Typography>
         </Box>
         <Divider />
@@ -130,7 +130,10 @@ export default function AppShell({ workbook, currentTab, onTabChange, children }
               <ListItemText
                 primary={tab.title}
                 secondary={`${tab.dimensions.rows} rows · ${tab.dimensions.columns} columns`}
-                primaryTypographyProps={{ fontWeight: 750 }}
+                    primaryTypographyProps={{
+                      fontWeight: 750,
+                      sx: { overflowWrap: 'anywhere' },
+                    }}
               />
             </ListItemButton>
           ))}

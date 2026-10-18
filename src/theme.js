@@ -25,7 +25,7 @@ const theme = createTheme({
   components: {
     MuiCard: {
       defaultProps: { elevation: 0 },
-      styleOverrides: { root: { border: '1px solid #E4E8F0' } },
+      styleOverrides: { root: { minWidth: 0, border: '1px solid #E4E8F0' } },
     },
     MuiPaper: { defaultProps: { elevation: 0 } },
     MuiButtonBase: { defaultProps: { disableRipple: false } },

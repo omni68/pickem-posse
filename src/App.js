@@ -35,15 +35,6 @@ function StartupFrame({ children }) {
 }
 
 function LoadingState() {
-  const [messageIndex, setMessageIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setMessageIndex((current) => (current + 1) % loadingMessages.length);
-    }, 1800);
-    return () => window.clearInterval(timer);
-  }, []);
-
   return (
     <StartupFrame>
       <Paper className="loading-card" role="status" aria-label="Loading the Pick'em Posse scoreboard">
@@ -60,13 +51,13 @@ function LoadingState() {
         </Box>
         <Stack spacing={1.5} alignItems="center" sx={{ position: 'relative', zIndex: 1 }}>
           <Typography variant="h5" component="p">Fetching the latest chaos</Typography>
-          <Typography
-            color="text.secondary"
-            className="loading-message"
-            key={loadingMessages[messageIndex]}
-          >
-            {loadingMessages[messageIndex]}
-          </Typography>
+          <Box className="loading-messages" aria-hidden="true">
+            {loadingMessages.map((message) => (
+              <Typography color="text.secondary" className="loading-message" key={message}>
+                {message}
+              </Typography>
+            ))}
+          </Box>
           <LinearProgress aria-label="Loading scoreboard data" className="loading-progress" />
         </Stack>
       </Paper>
@@ -81,9 +72,9 @@ function TabRoute({ workbook }) {
 
   return (
     <AppShell workbook={workbook} currentTab={tab} onTabChange={(nextTab) => navigate(`/tab/${nextTab.slug}`)}>
-      {tab.type === 'scoreboard' && <ScoreboardView tab={tab} />}
+      {tab.type === 'scoreboard' && <ScoreboardView tab={tab} workbook={workbook} />}
       {tab.type === 'earnings' && <EarningsView tab={tab} />}
-      {tab.type === 'week' && <WeekView tab={tab} />}
+      {tab.type === 'week' && <WeekView tab={tab} workbook={workbook} />}
       {tab.type === 'sheet' && <SheetView tab={tab} />}
     </AppShell>
   );

@@ -58,9 +58,9 @@ export default function SheetView({ tab }) {
                 <Chip size="small" label={`Row ${index + 1}`} sx={{ mb: 1.25 }} />
                 <Stack spacing={0.75}>
                   {row.map((value, columnIndex) => value != null && value !== '' ? (
-                    <Stack direction="row" spacing={1.25} key={columnIndex} alignItems="baseline">
+                    <Stack direction="row" spacing={1.25} key={columnIndex} alignItems="baseline" sx={{ minWidth: 0 }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ minWidth: 28 }}>{columnName(columnIndex)}</Typography>
-                      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{value}</Typography>
+                      <Typography variant="body2" sx={{ minWidth: 0, flex: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{value}</Typography>
                     </Stack>
                   ) : null)}
                 </Stack>

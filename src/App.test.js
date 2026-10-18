@@ -71,6 +71,20 @@ test('loads the scoreboard and exposes workbook navigation', async () => {
   render(<ThemeProvider theme={theme}><App /></ThemeProvider>);
   expect(await screen.findByRole('heading', { name: 'Scoreboard' })).toBeInTheDocument();
   expect(screen.getAllByText('Alex Smith').length).toBeGreaterThan(0);
+  expect(screen.getByRole('table', { name: 'Standings' })).toBeInTheDocument();
+  expect(screen.getAllByText('Payout $').length).toBeGreaterThan(0);
+  expect(screen.queryByRole('heading', { name: 'Player ledger' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Analytics' })).not.toBeInTheDocument();
+
+  fireEvent.mouseDown(screen.getByLabelText('View and sort by'));
+  expect(await screen.findByRole('option', { name: 'Earnings $' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Best Payout $' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Worst Payout $' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Best Pick %' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Worst Pick %' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('option', { name: 'Worst Payout $' }));
+  expect(screen.getByRole('columnheader', { name: 'Worst Payout $' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Sort descending' })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: 'Open workbook navigation' }));
   expect(await screen.findByText('Choose a sheet to explore.')).toBeInTheDocument();
