@@ -1,4 +1,5 @@
 import {
+  atsCoveringSide,
   atsSideOutcomes,
   atsSpreads,
   exactScoreWinners,
@@ -39,6 +40,29 @@ test('shows inverse signed spreads for both teams and EVEN for a pick-em', () =>
   expect(atsSpreads(cell(-14.5))).toEqual({ away: '+14.5', home: '-14.5' });
   expect(atsSpreads(cell(0))).toEqual({ away: 'EVEN', home: 'EVEN' });
   expect(atsSpreads(cell(''))).toEqual({ away: '—', home: '—' });
+});
+
+test('identifies the team currently covering from the live score and home spread', () => {
+  const game = {
+    away: cell('Baltimore'),
+    home: cell('Cleveland'),
+    homeSpread: cell(-3.5),
+    winner: cell(''),
+  };
+  expect(atsCoveringSide(game, { awayScore: 17, homeScore: 20 })).toBe('away');
+  expect(atsCoveringSide(game, { awayScore: 16, homeScore: 20 })).toBe('home');
+});
+
+test('uses the spreadsheet winner for final games and leaves pushes unhighlighted', () => {
+  const game = {
+    away: cell('Baltimore'),
+    home: cell('Cleveland'),
+    homeSpread: cell(-3),
+    scoreAway: cell(20),
+    scoreHome: cell(20),
+  };
+  expect(atsCoveringSide({ ...game, winner: cell('Cleveland') })).toBe('home');
+  expect(atsCoveringSide({ ...game, winner: cell('PUSH') })).toBeNull();
 });
 
 test('sorts pending games first and orders each status chronologically', () => {

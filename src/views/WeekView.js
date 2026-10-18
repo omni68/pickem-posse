@@ -6,13 +6,21 @@ import {
   Avatar,
   AvatarGroup,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControl,
   Grid,
   InputLabel,
+  List,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Select,
   Stack,
@@ -23,15 +31,20 @@ import SportsFootballRoundedIcon from '@mui/icons-material/SportsFootballRounded
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import Groups2RoundedIcon from '@mui/icons-material/Groups2Rounded';
 import SavingsRoundedIcon from '@mui/icons-material/SavingsRounded';
+import LinkRoundedIcon from '@mui/icons-material/LinkRounded';
+import SensorsRoundedIcon from '@mui/icons-material/SensorsRounded';
 import MetricCard from '../components/MetricCard';
 import { formatCurrency, formatGameStart, initials, showCell, valueTone } from '../data/formatters';
+import { formatEspnKickoff, liveStatusLabel } from '../data/liveScores';
 import {
+  atsCoveringSide,
   atsSideOutcomes,
   atsSpreads,
   exactScoreWinners,
   jackpotRolloverWeeks,
   sortGamesByStatusAndStart,
 } from '../data/week';
+import useLiveScores from '../hooks/useLiveScores';
 
 const formatOutcomeAmount = (amount) => (
   amount == null ? '—' : formatCurrency({ raw: amount, display: String(amount) })
@@ -78,13 +91,26 @@ function ResponsivePickAvatars({ picks }) {
   );
 }
 
-function TeamRow({ label, team, score, picks, selectedPick, payout, final, outcome, spread }) {
+function TeamRow({ label, team, score, picks, selectedPick, payout, final, outcome, spread, highlightLabel }) {
   const atsAmount = outcome.win ?? (outcome.lose == null ? null : Math.abs(outcome.lose));
   const formattedAtsAmount = formatOutcomeAmount(atsAmount);
 
   return (
-    <Box sx={{ py: 1.6 }}>
-      <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1.5 }} sx={{ minWidth: 0 }}>
+    <Box
+      sx={{
+        position: 'relative',
+        mx: highlightLabel ? -0.75 : 0,
+        px: highlightLabel ? 0.75 : 0,
+        pt: 1.6,
+        pb: highlightLabel ? 3.8 : 1.6,
+        overflow: 'hidden',
+        border: highlightLabel ? '1px solid rgba(54, 160, 73, 0.45)' : '1px solid transparent',
+        borderRadius: highlightLabel ? 2 : 0,
+        bgcolor: highlightLabel ? 'rgba(88, 204, 112, 0.34)' : 'transparent',
+        transition: 'background-color 220ms ease',
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1.5 }} sx={{ position: 'relative', zIndex: 1, minWidth: 0 }}>
         <Avatar sx={{ flexShrink: 0, width: { xs: 36, sm: 40 }, height: { xs: 36, sm: 40 }, bgcolor: selectedPick ? 'secondary.main' : 'action.hover', color: selectedPick ? '#fff' : 'text.primary', fontSize: 13, fontWeight: 800 }}>
           {initials(team)}
         </Avatar>
@@ -127,6 +153,29 @@ function TeamRow({ label, team, score, picks, selectedPick, payout, final, outco
           {selectedPick && <Typography variant="caption" color={valueTone(payout) === 'default' ? 'text.secondary' : `${valueTone(payout)}.main`} fontWeight={800}>{formatCurrency(payout)}</Typography>}
         </Box>
       </Stack>
+      {highlightLabel && (
+        <Typography
+          aria-hidden="true"
+          component="span"
+          sx={{
+            position: 'absolute',
+            right: 16,
+            bottom: 8,
+            left: 16,
+            color: 'rgba(8, 88, 42, 0.9)',
+            fontSize: { xs: '0.68rem', sm: '0.74rem' },
+            fontWeight: 900,
+            letterSpacing: '0.08em',
+            lineHeight: 1.1,
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+          }}
+        >
+          {highlightLabel}
+        </Typography>
+      )}
     </Box>
   );
 }
@@ -176,11 +225,91 @@ export function GameOfTheWeekDetails({ game, selectedPrediction, jackpotResult, 
   );
 }
 
-function GameCard({ game, selectedBettor, selectedPrediction, jackpotResult, jackpotTotal }) {
+const leagueLabel = (league) => (league === 'nfl' ? 'NFL' : 'College football');
+
+export function LiveScoreMatchDialog({ game, match, open, onClose, onSelect }) {
+  const candidates = match?.candidates || [];
+  const matchup = game ? `${showCell(game.away)} at ${showCell(game.home)}` : 'this game';
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="live-score-match-title">
+      <DialogTitle id="live-score-match-title">Choose the live score</DialogTitle>
+      <DialogContent dividers>
+        <Typography variant="body2" color="text.secondary">
+          We could not confidently match {matchup}. Select the ESPN game that should provide its score.
+        </Typography>
+        {candidates.length ? (
+          <List disablePadding sx={{ mt: 1.5 }}>
+            {candidates.map((candidate) => {
+              const { event } = candidate;
+              const confidence = Math.round(candidate.score * 100);
+              return (
+                <ListItemButton
+                  key={event.key}
+                  onClick={() => onSelect(event)}
+                  sx={{
+                    alignItems: 'flex-start',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2.5,
+                    mb: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={`${event.away.team.displayName} at ${event.home.team.displayName}`}
+                    secondary={`${leagueLabel(event.league)} · ${formatEspnKickoff(event.startTime)} · ${liveStatusLabel(event)} · ${confidence}% match`}
+                    primaryTypographyProps={{ fontWeight: 800, sx: { overflowWrap: 'anywhere' } }}
+                    secondaryTypographyProps={{ sx: { mt: 0.5, overflowWrap: 'anywhere' } }}
+                  />
+                </ListItemButton>
+              );
+            })}
+          </List>
+        ) : (
+          <Box sx={{ mt: 2, p: 2, borderRadius: 2.5, bgcolor: 'background.default' }}>
+            <Typography variant="body2">No ESPN games were found near this kickoff.</Typography>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap' }}>
+        <Button color="inherit" onClick={() => onSelect(null)}>Don&apos;t use a live score</Button>
+        <Button onClick={onClose}>Cancel</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+export function GameCard({
+  game,
+  selectedBettor,
+  selectedPrediction,
+  jackpotResult,
+  jackpotTotal,
+  liveMatch,
+  liveScoresReady,
+  liveScoreError,
+  onChooseLiveScore,
+}) {
   const awayPicks = game.picks.filter((pick) => pick.side === 'away');
   const homePicks = game.picks.filter((pick) => pick.side === 'home');
   const bettorPick = game.picks.find((pick) => pick.bettor.display === selectedBettor);
   const final = game.winner.display !== '';
+  const liveEvent = final ? null : liveMatch?.event;
+  const liveInProgress = liveEvent?.status.state === 'in';
+  const liveIsFinal = liveEvent?.status.state === 'post' || liveEvent?.status.completed;
+  const liveScoreAvailable = liveInProgress || liveIsFinal;
+  const awayScore = liveScoreAvailable ? liveEvent.away.score : showCell(game.scoreAway, '');
+  const homeScore = liveScoreAvailable ? liveEvent.home.score : showCell(game.scoreHome, '');
+  const coveringSide = final
+    ? atsCoveringSide(game)
+    : liveScoreAvailable
+      ? atsCoveringSide(game, { awayScore: liveEvent.away.score, homeScore: liveEvent.home.score })
+      : null;
+  const coveringLabel = final || liveIsFinal ? 'Covered' : 'Currently covering…';
+  const needsMatch = !final
+    && liveScoresReady
+    && !liveEvent
+    && ['ambiguous', 'unmatched', 'ignored'].includes(liveMatch?.status);
   const spreads = atsSpreads(game.homeSpread);
   const outcomes = atsSideOutcomes(game);
 
@@ -191,16 +320,42 @@ function GameCard({ game, selectedBettor, selectedPrediction, jackpotResult, jac
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="overline" color="text.secondary" fontWeight={800} sx={{ display: 'block', lineHeight: 1.45, whiteSpace: 'normal' }}>{formatGameStart(game.date, game.time)}</Typography>
             <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
-              <Chip size="small" color={final ? 'default' : 'warning'} label={final ? 'Final' : 'Pending'} />
+              {!liveEvent && <Chip size="small" color={final ? 'default' : 'warning'} label={final ? 'Final' : 'Pending'} />}
+              {liveEvent && (
+                <Chip
+                  size="small"
+                  color={liveInProgress ? 'error' : liveIsFinal ? 'default' : 'warning'}
+                  icon={liveInProgress ? <SensorsRoundedIcon /> : undefined}
+                  label={liveInProgress ? `Live · ${liveStatusLabel(liveEvent)}` : liveStatusLabel(liveEvent)}
+                  aria-label={`ESPN status ${liveStatusLabel(liveEvent)}`}
+                />
+              )}
+              {liveEvent && <Chip size="small" variant="outlined" label="ESPN" />}
               {game.isGameOfTheWeek && <Chip size="small" color="secondary" icon={<EmojiEventsRoundedIcon />} label="Game of the week" />}
             </Stack>
+            {needsMatch && (
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<LinkRoundedIcon />}
+                onClick={() => onChooseLiveScore(game)}
+                sx={{ mt: 1 }}
+              >
+                Choose live score
+              </Button>
+            )}
+            {!final && liveScoreError && !liveEvent && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                Live score temporarily unavailable
+              </Typography>
+            )}
           </Box>
         </Stack>
 
         <Box sx={{ mt: 1.5 }}>
-          <TeamRow label="Away" team={showCell(game.away)} score={showCell(game.scoreAway, '')} picks={awayPicks} selectedPick={bettorPick?.side === 'away'} payout={bettorPick?.payout} final={final} outcome={outcomes.away} spread={spreads.away} />
+          <TeamRow label="Away" team={showCell(game.away)} score={awayScore} picks={awayPicks} selectedPick={bettorPick?.side === 'away'} payout={bettorPick?.payout} final={final || liveIsFinal} outcome={outcomes.away} spread={spreads.away} highlightLabel={coveringSide === 'away' ? coveringLabel : ''} />
           <Divider />
-          <TeamRow label="Home" team={showCell(game.home)} score={showCell(game.scoreHome, '')} picks={homePicks} selectedPick={bettorPick?.side === 'home'} payout={bettorPick?.payout} final={final} outcome={outcomes.home} spread={spreads.home} />
+          <TeamRow label="Home" team={showCell(game.home)} score={homeScore} picks={homePicks} selectedPick={bettorPick?.side === 'home'} payout={bettorPick?.payout} final={final || liveIsFinal} outcome={outcomes.home} spread={spreads.home} highlightLabel={coveringSide === 'home' ? coveringLabel : ''} />
         </Box>
 
         <Divider sx={{ my: 1.25 }} />
@@ -255,9 +410,16 @@ function BettorSummary({ bettor, awayLabel, homeLabel }) {
 export default function WeekView({ tab, workbook }) {
   const { games, bettors, summary } = tab.data;
   const [selectedBettor, setSelectedBettor] = useState('all');
+  const [matchingGame, setMatchingGame] = useState(null);
   const activeBettor = useMemo(() => bettors.find((bettor) => bettor.player.display === selectedBettor), [bettors, selectedBettor]);
   const orderedGames = useMemo(() => sortGamesByStatusAndStart(games), [games]);
   const finalGames = games.filter((game) => game.winner.display !== '').length;
+  const liveScores = useLiveScores({
+    games,
+    spreadsheetId: workbook?.source?.spreadsheetId,
+    tab,
+  });
+  const matchingResult = matchingGame ? liveScores.matches[matchingGame.row] : null;
   const jackpotResult = useMemo(() => ({
     winners: exactScoreWinners(tab),
     rolloverWeeks: jackpotRolloverWeeks(workbook, tab),
@@ -271,6 +433,15 @@ export default function WeekView({ tab, workbook }) {
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="h5">Games and picks</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Filter to highlight one player’s picks and payouts.</Typography>
+              {!liveScores.hasLoaded && games.length > finalGames && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>Finding live scores…</Typography>
+              )}
+              {liveScores.lastUpdated && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                  Live scores updated {liveScores.lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                  {liveScores.isRefreshing ? ' · Refreshing…' : ''}
+                </Typography>
+              )}
             </Box>
             <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 260 } }}>
               <InputLabel id={`${tab.slug}-bettor-label`}>Player</InputLabel>
@@ -310,9 +481,24 @@ export default function WeekView({ tab, workbook }) {
             selectedPrediction={activeBettor}
             jackpotResult={jackpotResult}
             jackpotTotal={summary.jackpotTotal}
+            liveMatch={liveScores.matches[game.row]}
+            liveScoresReady={liveScores.hasLoaded}
+            liveScoreError={liveScores.error}
+            onChooseLiveScore={setMatchingGame}
           />
         ))}
       </Stack>
+
+      <LiveScoreMatchDialog
+        game={matchingGame}
+        match={matchingResult}
+        open={Boolean(matchingGame)}
+        onClose={() => setMatchingGame(null)}
+        onSelect={(event) => {
+          liveScores.confirmMatch(matchingGame, event);
+          setMatchingGame(null);
+        }}
+      />
 
       <Accordion disableGutters sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '16px !important', '&:before': { display: 'none' } }}>
         <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />} sx={{ px: { xs: 2, sm: 2.5 }, minHeight: 64 }}>

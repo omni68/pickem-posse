@@ -4,10 +4,11 @@ A mobile-first Material UI site for exploring a templated Google Sheets pick'em 
 
 ## Architecture
 
-GitHub Actions downloads the publicly shared workbook during deployment, normalizes it into `public/data/workbook.json`, and publishes that JSON with the static React site. The browser does not call Google Sheets directly.
+GitHub Actions downloads the publicly shared workbook during deployment, normalizes it into `public/data/workbook.json`, and publishes that JSON with the static React site. The browser does not call Google Sheets directly. Week views supplement pending workbook games with display-only live scores from ESPN.
 
 ```text
 Google Sheet → GitHub Actions importer → normalized JSON → React build → GitHub Pages
+ESPN scoreboards → browser-side matchup finder → pending game cards
 ```
 
 The checked-in JSON is a development snapshot generated from the supplied 2026 workbook. Scheduled deployments replace it with current Google Sheets data.
@@ -52,3 +53,9 @@ npm run data:import
 ```
 
 The importer downloads the public `.xlsx` export, validates the resulting contract, and writes the normalized data to `public/data/workbook.json`.
+
+## Live scores
+
+Pending games are matched against the public ESPN NFL and college-football scoreboards using the away team, home team, and Central-time kickoff. Team aliases come from ESPN's own location, name, display name, short name, and abbreviation fields; the app does not maintain a manual team-name map.
+
+Only a unique, high-confidence matchup is selected automatically. If multiple games are plausible, the week view asks the viewer to choose one and remembers that choice in the current browser. Live scores never change spreadsheet-based picks, payouts, winners, jackpots, or standings. ESPN's scoreboard feed is public and requires no credential, but it is not a documented service contract, so its integration is isolated behind a replaceable adapter.

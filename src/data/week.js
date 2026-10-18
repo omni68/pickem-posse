@@ -34,6 +34,40 @@ export const atsSpreads = (homeSpread) => {
   };
 };
 
+const comparableTeamName = (value) => {
+  const source = value && typeof value === 'object' ? (value.display || value.raw || '') : value;
+  return String(source || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+};
+
+const scoreNumber = (value) => {
+  const raw = value?.raw ?? value;
+  if (raw === '' || raw == null) return null;
+  const number = Number(raw);
+  return Number.isFinite(number) ? number : null;
+};
+
+export const atsCoveringSide = (game, scores = {}) => {
+  const recordedWinner = comparableTeamName(game?.winner);
+  if (recordedWinner) {
+    if (recordedWinner === comparableTeamName(game?.away)) return 'away';
+    if (recordedWinner === comparableTeamName(game?.home)) return 'home';
+    return null;
+  }
+
+  const awayScore = scoreNumber(scores.awayScore ?? game?.scoreAway);
+  const homeScore = scoreNumber(scores.homeScore ?? game?.scoreHome);
+  const homeSpread = scoreNumber(game?.homeSpread);
+  if (awayScore == null || homeScore == null || homeSpread == null) return null;
+
+  const adjustedHomeScore = homeScore + homeSpread;
+  if (awayScore > adjustedHomeScore) return 'away';
+  if (awayScore < adjustedHomeScore) return 'home';
+  return null;
+};
+
 export const sortGamesByStatusAndStart = (games = []) => [...games].sort((left, right) => {
   const statusDifference = Number(Boolean(left.winner?.display)) - Number(Boolean(right.winner?.display));
   if (statusDifference !== 0) return statusDifference;
