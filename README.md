@@ -1,75 +1,54 @@
-# Getting Started with Create React App
+# Pick'em Posse
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A mobile-first Material UI site for exploring a templated Google Sheets pick'em workbook. Navigation mirrors the workbook tabs, and the bottom-right menu provides direct access to every sheet.
 
-## Available Scripts
+## Architecture
 
-In the project directory, you can run:
+GitHub Actions downloads the publicly shared workbook during deployment, normalizes it into `public/data/workbook.json`, and publishes that JSON with the static React site. The browser does not call Google Sheets directly.
 
-### `npm start`
+```text
+Google Sheet → GitHub Actions importer → normalized JSON → React build → GitHub Pages
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+The checked-in JSON is a development snapshot generated from the supplied 2026 workbook. Scheduled deployments replace it with current Google Sheets data.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Local development
 
-### `npm test`
+```bash
+npm ci
+npm start
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Useful checks:
 
-### `npm run build`
+```bash
+npm run test:parser
+npm run test:ci
+npm run build
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## GitHub configuration
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Add repository variable `GOOGLE_SHEET_URL` containing the full source spreadsheet URL before enabling the Pages workflow. The workbook must be shared as **Anyone with the link → Viewer**. No Google credential or GitHub Actions secret is required.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The workflow runs for changes to `site`, manual dispatches, and every 30 minutes. A failed import or test prevents a broken deployment from replacing the last successful site.
 
-### `npm run eject`
+## Workbook conventions
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- Navigation follows worksheet order and updates automatically when tabs are added, removed, renamed, or reordered.
+- `Scoreboard` becomes the standings and player-ledger view.
+- `Weekly Earnings` becomes the season leaderboard and player drill-down.
+- `Week N` and recognized postseason names become game, pick, payout, and jackpot views.
+- Other worksheets use the responsive fallback grid.
+- Weekly bettor sections are discovered from repeating `Away`, `Home`, and `Payout` headers, so the bettor count is not hard-coded.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Data refresh
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Run a public import locally with:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+GOOGLE_SHEET_URL='https://docs.google.com/spreadsheets/d/…/edit' \
+npm run data:import
+```
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# neighborhood-pickem
-# neighborhood-pickem
-# neighborhood-pickem
-# neighborhood-pickem
-# neighborhood-pickem
+The importer downloads the public `.xlsx` export, validates the resulting contract, and writes the normalized data to `public/data/workbook.json`.

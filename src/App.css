@@ -1,58 +1,173 @@
-.App {
-  text-align: center;
+html {
+  background: #f4f6fa;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  min-width: 320px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+* {
+  box-sizing: border-box;
 }
 
-.App-header {
-  background-color: #282c34;
+.startup-page {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(233, 101, 43, 0.14), transparent 28rem),
+    radial-gradient(circle at 90% 75%, rgba(49, 72, 111, 0.12), transparent 30rem),
+    #f4f6fa;
 }
 
-.App-link {
-  color: #61dafb;
+.startup-header {
+  min-height: 176px;
+  padding-top: max(32px, env(safe-area-inset-top));
+  background: linear-gradient(140deg, #10192d 0%, #243557 72%, #31486f 100%);
+  color: #fff;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.startup-brand {
+  font-size: clamp(1.25rem, 5vw, 1.75rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.startup-content {
+  display: grid !important;
+  place-items: center;
+  min-height: calc(100vh - 176px);
+  padding-top: 24px;
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  transform: translateY(-48px);
+}
+
+.loading-card {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: clamp(20px, 6vw, 36px);
+  border-radius: 28px !important;
+  box-shadow: 0 26px 70px rgba(20, 32, 55, 0.16) !important;
+}
+
+.loading-card::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(246, 248, 252, 0.9));
+  content: '';
+}
+
+.loading-art-stage {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 360px);
+  margin: 0 auto 8px;
+}
+
+.loading-posse-art {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 18px 18px rgba(16, 25, 45, 0.16));
+  animation: posse-hustle 1.4s ease-in-out infinite;
+  transform-origin: 50% 82%;
+}
+
+.loading-art-shadow {
+  position: absolute;
+  z-index: 1;
+  right: 17%;
+  bottom: 4%;
+  left: 17%;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(16, 25, 45, 0.18);
+  filter: blur(10px);
+  animation: posse-shadow 1.4s ease-in-out infinite;
+}
+
+.loading-callout {
+  position: absolute;
+  z-index: 3;
+  padding: 7px 10px;
+  border: 2px solid #18233a;
+  border-radius: 999px;
+  background: #fff;
+  color: #18233a;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  box-shadow: 3px 4px 0 #e9652b;
+}
+
+.loading-callout-lock {
+  top: 18%;
+  left: 1%;
+  animation: callout-float 1.7s ease-in-out infinite alternate;
+}
+
+.loading-callout-spread {
+  top: 43%;
+  right: -1%;
+  animation: callout-float 1.7s 0.45s ease-in-out infinite alternate-reverse;
+}
+
+.loading-message {
+  min-height: 24px;
+  text-align: center;
+  animation: message-pop 0.35s ease-out both;
+}
+
+.loading-progress {
+  width: min(100%, 280px);
+  height: 7px !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+@keyframes posse-hustle {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-13px) rotate(1.2deg); }
+}
+
+@keyframes posse-shadow {
+  0%, 100% { opacity: 0.75; transform: scaleX(1); }
+  50% { opacity: 0.42; transform: scaleX(0.82); }
+}
+
+@keyframes callout-float {
+  from { transform: translateY(0) rotate(-4deg); }
+  to { transform: translateY(-10px) rotate(3deg); }
+}
+
+@keyframes message-pop {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .startup-header {
+    min-height: 146px;
   }
-  to {
-    transform: rotate(360deg);
+
+  .startup-content {
+    min-height: calc(100vh - 146px);
+    transform: translateY(-34px);
+  }
+
+  .loading-callout-spread {
+    right: 0;
   }
 }
 
-.game-pending th {
-    color: white;
-}
-
-.game-pending thead {
-    background-color: #cc5500;
-}
-
-.game-over th {
-    color: black;
-}
-
-.game-over thead {
-    background-color: lightgrey;
-}
-
-.MuiGrid2-container {
-    margin: 8px !important;
+@media (prefers-reduced-motion: reduce) {
+  .loading-posse-art,
+  .loading-art-shadow,
+  .loading-callout,
+  .loading-message {
+    animation: none;
+  }
 }

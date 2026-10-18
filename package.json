@@ -18,8 +18,14 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "npm run data:validate && react-scripts build && npm run security:build",
+    "data:import": "node scripts/import-google-sheet.mjs",
+    "data:normalize": "node scripts/normalize-workbook.mjs",
+    "data:validate": "node scripts/validate-workbook.mjs",
+    "security:build": "node scripts/check-build-secrets.mjs",
     "test": "react-scripts test",
+    "test:ci": "react-scripts test --watchAll=false",
+    "test:parser": "node --test scripts/lib/workbook-parser.test.cjs",
     "eject": "react-scripts eject",
     "deploy": "gh-pages -d build",
     "predeploy": "npm run build"
@@ -44,6 +50,7 @@
   },
   "devDependencies": {
     "@mui/icons-material": "^5.14.9",
+    "exceljs": "^4.4.0",
     "gh-pages": "^6.0.0"
   }
 }

@@ -12,6 +12,10 @@
 
 # misc
 .DS_Store
+.env
+service_account_credentials.json
+service-account-credentials.json
+raw-workbook.json
 .env.local
 .env.development.local
 .env.test.local
