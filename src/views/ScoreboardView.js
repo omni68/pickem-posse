@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Divider,
   FormControl,
   Grid,
   IconButton,
@@ -26,10 +27,20 @@ import SavingsRoundedIcon from '@mui/icons-material/SavingsRounded';
 import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import MetricCard from '../components/MetricCard';
-import { buildPlayerAnalytics, rankSortedRows } from '../data/analytics';
+import { buildPlayerAnalytics, metricLeaders, rankSortedRows } from '../data/analytics';
 import { formatCurrency, showCell } from '../data/formatters';
 
 const rankColor = (index) => (['#E9652B', '#73809A', '#A96C3D'][index] || '#E9EDF4');
+
+const featuredLeaderMetrics = [
+  { key: 'contrarianWins', label: 'Contrarian King', eligible: (player) => player.contrarianPicks > 0 },
+  { key: 'correctPickPercentage', label: 'Correct Pick %' },
+  { key: 'bestPickPercentage', label: 'Best Pick %' },
+  { key: 'nflCorrectPickPercentage', label: 'NFL Correct Pick %' },
+  { key: 'cfbCorrectPickPercentage', label: 'CFB Correct Pick %' },
+  { key: 'longestHeater', label: 'Longest Heater' },
+  { key: 'averageExactScoreError', label: 'Average Exact-Score Error', ascending: true },
+];
 
 const standingsMetrics = [
   { key: 'totalPayout', label: 'Payout $' },
@@ -42,6 +53,8 @@ const standingsMetrics = [
   { key: 'bestPayout', label: 'Best Payout $' },
   { key: 'worstPayout', label: 'Worst Payout $' },
   { key: 'correctPickPercentage', label: 'Correct Pick %' },
+  { key: 'nflCorrectPickPercentage', label: 'NFL Correct Pick %' },
+  { key: 'cfbCorrectPickPercentage', label: 'CFB Correct Pick %' },
   { key: 'bestPickPercentage', label: 'Best Pick %' },
   { key: 'worstPickPercentage', label: 'Worst Pick %' },
   { key: 'closestExactScore', label: 'Closest Exact Score' },
@@ -64,6 +77,48 @@ const percentageValue = (value, signed = false) => {
   const prefix = signed && value > 0 ? '+' : '';
   return `${prefix}${value.toFixed(1)}%`;
 };
+
+const leaderScore = (metricKey, value) => {
+  if (value == null) return '—';
+  if (['correctPickPercentage', 'bestPickPercentage', 'nflCorrectPickPercentage', 'cfbCorrectPickPercentage'].includes(metricKey)) {
+    return `${value.toFixed(1)}%`;
+  }
+  if (metricKey === 'contrarianWins') return `${value} ${value === 1 ? 'win' : 'wins'}`;
+  if (metricKey === 'longestHeater') return `${value} ${value === 1 ? 'pick' : 'picks'}`;
+  if (metricKey === 'averageExactScoreError') return `${value.toFixed(1)} pts off`;
+  return String(value);
+};
+
+function StatLeaders({ rows }) {
+  const leaders = useMemo(() => featuredLeaderMetrics.map((metric) => ({
+    ...metric,
+    ...metricLeaders(rows, metric.key, { ascending: metric.ascending, eligible: metric.eligible }),
+  })), [rows]);
+
+  return (
+    <Card>
+      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+        <Typography variant="h5" sx={{ mb: 1.25 }}>Stat leaders</Typography>
+        <Stack divider={<Divider flexItem />}>
+          {leaders.map((leader) => (
+            <Stack key={leader.key} direction="row" alignItems="flex-start" spacing={1.25} sx={{ py: 1.1, minWidth: 0 }}>
+              <Typography variant="caption" fontWeight={900} color="primary.main" sx={{ pt: 0.15, flexShrink: 0 }}>#1</Typography>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ display: 'block' }}>{leader.label}</Typography>
+                <Typography variant="body2" fontWeight={750} sx={{ overflowWrap: 'anywhere' }}>
+                  {leader.players.length ? leader.players.join(', ') : 'No qualifying data'}
+                </Typography>
+              </Box>
+              <Typography variant="body2" fontWeight={900} sx={{ flexShrink: 0, textAlign: 'right' }}>
+                {leaderScore(leader.key, leader.value)}
+              </Typography>
+            </Stack>
+          ))}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
 
 function MetricValue({ metric, player }) {
   if (metric.key === 'returnOnAmountPaid') {
@@ -184,14 +239,21 @@ function MetricValue({ metric, player }) {
     );
   }
 
-  if (metric.key === 'correctPickPercentage') {
+  if (['correctPickPercentage', 'nflCorrectPickPercentage', 'cfbCorrectPickPercentage'].includes(metric.key)) {
+    const prefix = metric.key === 'nflCorrectPickPercentage'
+      ? 'nfl'
+      : metric.key === 'cfbCorrectPickPercentage'
+        ? 'cfb'
+        : '';
+    const correctPicks = player[`${prefix}${prefix ? 'CorrectPicks' : 'correctPicks'}`];
+    const totalPicks = player[`${prefix}${prefix ? 'TotalPicks' : 'totalPicks'}`];
     return (
       <Box>
         <Typography fontWeight={800}>
-          {player.correctPickPercentage == null ? '—' : `${player.correctPickPercentage.toFixed(1)}%`}
+          {player[metric.key] == null ? '—' : `${player[metric.key].toFixed(1)}%`}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          {player.correctPicks}/{player.totalPicks} correct
+          {correctPicks}/{totalPicks} correct
         </Typography>
       </Box>
     );
@@ -342,6 +404,8 @@ export default function ScoreboardView({ tab, workbook }) {
         <Grid item xs={12} sm={4}><MetricCard label="Qualifiers" value={showCell(summary.qualifiers, '0')} icon={<EmojiEventsRoundedIcon />} color="success.main" /></Grid>
         <Grid item xs={12} sm={4}><MetricCard label="Players" value={String(summary.playerCount)} icon={<Groups2RoundedIcon />} color="primary.light" /></Grid>
       </Grid>
+
+      <StatLeaders rows={standings} />
 
       <StandingsTable rows={standings} />
     </Stack>

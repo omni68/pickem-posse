@@ -1,4 +1,9 @@
-import { buildPlayerAnalytics, rankSortedRows } from './analytics';
+import {
+  buildPlayerAnalytics,
+  footballLeagueForGame,
+  metricLeaders,
+  rankSortedRows,
+} from './analytics';
 
 const cell = (raw) => ({ raw, display: raw === '' ? '' : String(raw) });
 
@@ -18,6 +23,19 @@ test('uses competition ranking for tied values across any metric', () => {
     { player: 'Joseph', payout: 0 },
   ], 'payout');
   expect(ascending.map(({ rank }) => rank)).toEqual([1, 1, 3]);
+});
+
+test('finds every player tied for the top metric value', () => {
+  const rows = [
+    { player: 'Alex', percentage: 75, error: 4 },
+    { player: 'Bailey', percentage: 80, error: 2 },
+    { player: 'Casey', percentage: 80, error: 2 },
+    { player: 'Drew', percentage: null, error: null },
+  ];
+
+  expect(metricLeaders(rows, 'percentage')).toEqual({ value: 80, players: ['Bailey', 'Casey'] });
+  expect(metricLeaders(rows, 'error', { ascending: true })).toEqual({ value: 2, players: ['Bailey', 'Casey'] });
+  expect(metricLeaders(rows, 'percentage', { eligible: (row) => row.player === 'Alex' })).toEqual({ value: 75, players: ['Alex'] });
 });
 
 test('calculates individualized ATS accuracy using each player’s actual pick count', () => {
@@ -52,6 +70,54 @@ test('calculates individualized ATS accuracy using each player’s actual pick c
   expect(analytics.find((player) => player.player === 'Alex')).toMatchObject({ amountPaid: 150, totalPayout: 200, totalEarnings: 100, totalPicks: 2, correctPicks: 1, correctPickPercentage: 50 });
   expect(analytics.find((player) => player.player === 'Bailey')).toMatchObject({ amountPaid: 100, quitter: true, totalPicks: 1, correctPicks: 1, correctPickPercentage: 100 });
   expect(analytics.find((player) => player.player === 'Casey')).toMatchObject({ amountPaid: 0, totalPicks: 0, correctPickPercentage: null });
+});
+
+test('separates NFL and college-football pick percentages', () => {
+  const scoreboard = {
+    data: {
+      players: [
+        { player: cell('Alex'), quitter: cell(''), totalWinnings: cell(0), totalPayout: cell(0) },
+        { player: cell('Bailey'), quitter: cell(''), totalWinnings: cell(0), totalPayout: cell(0) },
+      ],
+    },
+  };
+  const nflGame = {
+    away: cell('Baltimore'),
+    home: cell('Cleveland'),
+    winner: cell('Baltimore'),
+    picks: [
+      { bettor: cell('Alex'), side: 'away' },
+      { bettor: cell('Bailey'), side: 'home' },
+    ],
+  };
+  const collegeGame = {
+    away: cell('Ohio State'),
+    home: cell('Michigan'),
+    winner: cell('Michigan'),
+    picks: [
+      { bettor: cell('Alex'), side: 'away' },
+      { bettor: cell('Bailey'), side: 'home' },
+    ],
+  };
+
+  expect(footballLeagueForGame(nflGame)).toBe('nfl');
+  expect(footballLeagueForGame(collegeGame)).toBe('college-football');
+  expect(footballLeagueForGame({ away: cell('Houston'), home: cell('Texas Tech') })).toBe('college-football');
+  expect(footballLeagueForGame({ away: cell('Houston'), home: cell('Jacksonville') })).toBe('nfl');
+
+  const analytics = buildPlayerAnalytics(scoreboard, [{ data: { games: [nflGame, collegeGame] } }]);
+  expect(analytics.find((player) => player.player === 'Alex')).toMatchObject({
+    nflCorrectPicks: 1,
+    nflTotalPicks: 1,
+    nflCorrectPickPercentage: 100,
+    cfbCorrectPicks: 0,
+    cfbTotalPicks: 1,
+    cfbCorrectPickPercentage: 0,
+  });
+  expect(analytics.find((player) => player.player === 'Bailey')).toMatchObject({
+    nflCorrectPickPercentage: 0,
+    cfbCorrectPickPercentage: 100,
+  });
 });
 
 test('finds each player’s best and worst single-week pick percentages', () => {

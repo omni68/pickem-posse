@@ -88,6 +88,9 @@ test('loads the scoreboard and exposes workbook navigation', async () => {
   expect(await screen.findByRole('heading', { name: 'Scoreboard' })).toBeInTheDocument();
   expect(screen.getAllByText('Alex Smith').length).toBeGreaterThan(0);
   expect(screen.getByRole('table', { name: 'Standings' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Stat leaders' })).toBeInTheDocument();
+  expect(screen.getByText('Contrarian King')).toBeInTheDocument();
+  expect(screen.getByText('Average Exact-Score Error')).toBeInTheDocument();
   expect(screen.getAllByText('Payout $').length).toBeGreaterThan(0);
   expect(screen.queryByRole('heading', { name: 'Player ledger' })).not.toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Analytics' })).not.toBeInTheDocument();
@@ -101,6 +104,8 @@ test('loads the scoreboard and exposes workbook navigation', async () => {
   expect(screen.getByRole('option', { name: 'Participation Rate' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Best Payout $' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Worst Payout $' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'NFL Correct Pick %' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'CFB Correct Pick %' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Best Pick %' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Worst Pick %' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Closest Exact Score' })).toBeInTheDocument();

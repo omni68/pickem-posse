@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/pickem-posse/static/css/main.792daebe.css",
-    "main.js": "/pickem-posse/static/js/main.09b7c85d.js",
+    "main.js": "/pickem-posse/static/js/main.521869ac.js",
     "static/js/415.a646df9b.chunk.js": "/pickem-posse/static/js/415.a646df9b.chunk.js",
     "index.html": "/pickem-posse/index.html",
     "main.792daebe.css.map": "/pickem-posse/static/css/main.792daebe.css.map",
-    "main.09b7c85d.js.map": "/pickem-posse/static/js/main.09b7c85d.js.map",
+    "main.521869ac.js.map": "/pickem-posse/static/js/main.521869ac.js.map",
     "415.a646df9b.chunk.js.map": "/pickem-posse/static/js/415.a646df9b.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.792daebe.css",
-    "static/js/main.09b7c85d.js"
+    "static/js/main.521869ac.js"
   ]
 }

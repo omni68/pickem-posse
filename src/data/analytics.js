@@ -2,6 +2,56 @@ import { cellNumber, gameStartTimestamp } from './formatters';
 
 const normalizedName = (value) => String(value || '').trim().toLowerCase();
 
+const NFL_TEAM_ALIASES = new Set([
+  'arizona', 'arizona cardinals',
+  'atlanta', 'atlanta falcons',
+  'baltimore', 'baltimore ravens',
+  'buffalo', 'buffalo bills',
+  'carolina', 'carolina panthers',
+  'chicago', 'chicago bears',
+  'cincinnati', 'cincinnati bengals',
+  'cleveland', 'cleveland browns',
+  'dallas', 'dallas cowboys',
+  'denver', 'denver broncos',
+  'detroit', 'detroit lions',
+  'green bay', 'green bay packers',
+  'houston', 'houston texans',
+  'indianapolis', 'indianapolis colts',
+  'jacksonville', 'jacksonville jaguars',
+  'kansas city', 'kansas city chiefs',
+  'las vegas', 'las vegas raiders',
+  'la chargers', 'los angeles chargers',
+  'la rams', 'los angeles rams',
+  'miami', 'miami dolphins',
+  'minnesota', 'minnesota vikings',
+  'new england', 'new england patriots',
+  'new orleans', 'new orleans saints',
+  'ny giants', 'new york giants',
+  'ny jets', 'new york jets',
+  'philadelphia', 'philadelphia eagles',
+  'pittsburgh', 'pittsburgh steelers',
+  'san francisco', 'san francisco 49ers',
+  'seattle', 'seattle seahawks',
+  'tampa bay', 'tampa bay buccaneers',
+  'tennessee', 'tennessee titans',
+  'washington', 'washington commanders',
+]);
+
+const normalizedTeamName = (value) => String(value || '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim()
+  .replace(/\s+/g, ' ');
+
+const teamCellName = (cell) => normalizedTeamName(cell?.display || cell?.raw);
+
+export const footballLeagueForGame = (game) => {
+  if (game?.league === 'nfl' || game?.league === 'college-football') return game.league;
+  return NFL_TEAM_ALIASES.has(teamCellName(game?.away)) && NFL_TEAM_ALIASES.has(teamCellName(game?.home))
+    ? 'nfl'
+    : 'college-football';
+};
+
 const populatedNumber = (value) => {
   if (!value || (value.raw === '' && !value.display)) return null;
   return cellNumber(value);
@@ -17,6 +67,27 @@ export const rankSortedRows = (rows, metricKey) => {
     previousValue = value;
     return { ...row, rank };
   });
+};
+
+export const metricLeaders = (rows, metricKey, { ascending = false, eligible = () => true } = {}) => {
+  const candidates = rows.filter((row) => (
+    eligible(row)
+    && row[metricKey] != null
+    && Number.isFinite(row[metricKey])
+  ));
+  if (!candidates.length) return { value: null, players: [] };
+
+  const value = candidates.reduce((best, row) => (
+    ascending ? Math.min(best, row[metricKey]) : Math.max(best, row[metricKey])
+  ), ascending ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+
+  return {
+    value,
+    players: candidates
+      .filter((row) => Object.is(row[metricKey], value))
+      .map((row) => row.player)
+      .sort((left, right) => left.localeCompare(right)),
+  };
 };
 
 export const buildPlayerAnalytics = (scoreboardTab, weekTabs = [], earningsTab = null) => {
@@ -52,6 +123,12 @@ export const buildPlayerAnalytics = (scoreboardTab, weekTabs = [], earningsTab =
       totalPicks: 0,
       correctPicks: 0,
       correctPickPercentage: null,
+      nflTotalPicks: 0,
+      nflCorrectPicks: 0,
+      nflCorrectPickPercentage: null,
+      cfbTotalPicks: 0,
+      cfbCorrectPicks: 0,
+      cfbCorrectPickPercentage: null,
       bestPickPercentage: null,
       bestPickWeek: '',
       bestWeekCorrectPicks: 0,
@@ -106,6 +183,7 @@ export const buildPlayerAnalytics = (scoreboardTab, weekTabs = [], earningsTab =
       const away = normalizedName(game.away?.display);
       const home = normalizedName(game.home?.display);
       const winningSide = winner && winner === away ? 'away' : winner && winner === home ? 'home' : null;
+      const league = footballLeagueForGame(game);
       const validPicks = (game.picks || []).filter((pick) => (
         pick?.side
         && pick?.bettor?.display
@@ -121,6 +199,13 @@ export const buildPlayerAnalytics = (scoreboardTab, weekTabs = [], earningsTab =
         const metrics = metricsByPlayer.get(key);
         metrics.totalPicks += 1;
         if (winningSide && pick.side === winningSide) metrics.correctPicks += 1;
+        if (league === 'nfl') {
+          metrics.nflTotalPicks += 1;
+          if (winningSide && pick.side === winningSide) metrics.nflCorrectPicks += 1;
+        } else {
+          metrics.cfbTotalPicks += 1;
+          if (winningSide && pick.side === winningSide) metrics.cfbCorrectPicks += 1;
+        }
 
         const week = weeklyMetrics.get(key) || { totalPicks: 0, correctPicks: 0 };
         week.totalPicks += 1;
@@ -219,6 +304,12 @@ export const buildPlayerAnalytics = (scoreboardTab, weekTabs = [], earningsTab =
       ...metrics,
       correctPickPercentage: metrics.totalPicks
         ? (metrics.correctPicks / metrics.totalPicks) * 100
+        : null,
+      nflCorrectPickPercentage: metrics.nflTotalPicks
+        ? (metrics.nflCorrectPicks / metrics.nflTotalPicks) * 100
+        : null,
+      cfbCorrectPickPercentage: metrics.cfbTotalPicks
+        ? (metrics.cfbCorrectPicks / metrics.cfbTotalPicks) * 100
         : null,
       returnOnAmountPaid: metrics.amountPaid
         ? (metrics.totalEarnings / metrics.amountPaid) * 100
