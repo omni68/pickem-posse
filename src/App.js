@@ -6,9 +6,11 @@ import EarningsView from './views/EarningsView';
 import ScoreboardView from './views/ScoreboardView';
 import SheetView from './views/SheetView';
 import WeekView from './views/WeekView';
+import { loadLatestWorkbook } from './data/workbookLoader';
 import './App.css';
 
 const dataUrl = `${process.env.PUBLIC_URL || ''}/data/workbook.json`;
+const metadataUrl = `${process.env.PUBLIC_URL || ''}/data/workbook-meta.json`;
 const loadingArtUrl = `${process.env.PUBLIC_URL || ''}/assets/loading-posse.png`;
 export const MINIMUM_LOADING_MS = 700;
 const loadingMessages = [
@@ -89,11 +91,11 @@ function AppContent() {
   useEffect(() => {
     const controller = new AbortController();
     const loadingTimer = window.setTimeout(() => setMinimumLoadingElapsed(true), MINIMUM_LOADING_MS);
-    fetch(dataUrl, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Workbook request failed (${response.status})`);
-        return response.json();
-      })
+    loadLatestWorkbook({
+      dataUrl,
+      metadataUrl,
+      fetchImpl: (url, options = {}) => fetch(url, { ...options, signal: controller.signal }),
+    })
       .then((payload) => setWorkbook(payload))
       .catch((reason) => {
         if (reason.name !== 'AbortError') setError(reason.message);

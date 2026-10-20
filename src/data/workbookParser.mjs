@@ -306,6 +306,8 @@ function normalizeWorkbook(source) {
       spreadsheetId: source.spreadsheetId || "",
       title: source.title || "Pick'em Scoreboard",
       url: source.url || "",
+      revision: source.revision == null ? null : String(source.revision),
+      revisionCheckedAt: source.revisionCheckedAt || "",
     },
     tabs,
   };
@@ -328,7 +330,7 @@ function validateWorkbook(workbook) {
   return errors;
 }
 
-module.exports = {
+export {
   cell,
   columnName,
   discoverBettorBlocks,

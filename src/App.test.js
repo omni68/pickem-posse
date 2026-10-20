@@ -2,6 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ThemeProvider } from '@mui/material';
 import App, { MINIMUM_LOADING_MS } from './App';
 import theme from './theme';
+import { loadLatestWorkbook } from './data/workbookLoader';
+
+jest.mock('./data/workbookLoader', () => ({ loadLatestWorkbook: jest.fn() }));
 
 const workbook = {
   version: 1,
@@ -43,7 +46,7 @@ const workbook = {
 
 beforeEach(() => {
   window.location.hash = '';
-  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => workbook });
+  loadLatestWorkbook.mockResolvedValue(workbook);
 });
 
 afterEach(() => {
@@ -53,8 +56,8 @@ afterEach(() => {
 
 test('shows the animated posse while workbook data is loading', async () => {
   jest.useFakeTimers();
-  let resolveFetch;
-  global.fetch = jest.fn(() => new Promise((resolve) => { resolveFetch = resolve; }));
+  let resolveWorkbook;
+  loadLatestWorkbook.mockImplementation(() => new Promise((resolve) => { resolveWorkbook = resolve; }));
 
   render(<ThemeProvider theme={theme}><App /></ThemeProvider>);
 
@@ -63,7 +66,7 @@ test('shows the animated posse while workbook data is loading', async () => {
   expect(screen.queryByRole('heading', { name: 'Scoreboard' })).not.toBeInTheDocument();
 
   await act(async () => {
-    resolveFetch({ ok: true, json: async () => workbook });
+    resolveWorkbook(workbook);
   });
   expect(screen.getByRole('status', { name: "Loading the Pick'em Posse scoreboard" })).toBeInTheDocument();
 

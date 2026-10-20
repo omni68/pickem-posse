@@ -1,14 +1,13 @@
 import ExcelJS from "exceljs";
 import fs from "node:fs/promises";
-import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { normalizeWorkbook, validateWorkbook } from "../src/data/workbookParser.mjs";
 
-const require = createRequire(import.meta.url);
-const { normalizeWorkbook, validateWorkbook } = require("./lib/workbook-parser.cjs");
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = path.join(projectRoot, "public/data/workbook.json");
+const metadataPath = path.join(projectRoot, "public/data/workbook-meta.json");
 const sheetUrl = process.env.GOOGLE_SHEET_URL || "";
 
 function spreadsheetIdFromUrl(value) {
@@ -63,10 +62,37 @@ async function fetchPublicWorkbook(spreadsheetId) {
   return Buffer.from(await response.arrayBuffer());
 }
 
+function revisionFromHtml(html) {
+  const match = String(html).match(/"revision"\s*:\s*(\d+)/);
+  if (!match) throw new Error("Google Sheet revision metadata was not found.");
+  return match[1];
+}
+
+async function fetchPublicRevision(spreadsheetId) {
+  const response = await fetch(
+    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit?usp=sharing`,
+    { cache: "no-store", redirect: "follow" },
+  );
+  if (!response.ok) throw new Error(`Google Sheet revision request failed (${response.status}).`);
+  return revisionFromHtml(await response.text());
+}
+
+async function fetchStablePublicWorkbook(spreadsheetId) {
+  let revision = await fetchPublicRevision(spreadsheetId);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const buffer = await fetchPublicWorkbook(spreadsheetId);
+    const confirmedRevision = await fetchPublicRevision(spreadsheetId);
+    if (confirmedRevision === revision) return { buffer, revision };
+    revision = confirmedRevision;
+  }
+  throw new Error("The Google Sheet changed repeatedly during import. Try again shortly.");
+}
+
 async function main() {
   if (!sheetUrl) throw new Error("GOOGLE_SHEET_URL is required.");
   const spreadsheetId = spreadsheetIdFromUrl(sheetUrl);
-  const buffer = await fetchPublicWorkbook(spreadsheetId);
+  const { buffer, revision } = await fetchStablePublicWorkbook(spreadsheetId);
+  const revisionCheckedAt = new Date().toISOString();
   const sourceWorkbook = new ExcelJS.Workbook();
   await sourceWorkbook.xlsx.load(buffer);
 
@@ -75,6 +101,8 @@ async function main() {
     title: sourceWorkbook.title || "Pick'em Scoreboard",
     url: sheetUrl,
     generatedAt: new Date().toISOString(),
+    revision,
+    revisionCheckedAt,
     sheets: sourceWorkbook.worksheets.map((worksheet, index) => ({
       sheetId: worksheet.id,
       title: worksheet.name,
@@ -90,6 +118,13 @@ async function main() {
 
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, `${JSON.stringify(workbook)}\n`, "utf8");
+  await fs.writeFile(metadataPath, `${JSON.stringify({
+    version: 1,
+    spreadsheetId,
+    sheetUrl,
+    bundledRevision: revision,
+    generatedAt: workbook.generatedAt,
+  })}\n`, "utf8");
   console.log(`Imported ${workbook.tabs.length} public workbook tabs.`);
 }
 

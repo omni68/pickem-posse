@@ -4,14 +4,15 @@ A mobile-first Material UI site for exploring a templated Google Sheets pick'em 
 
 ## Architecture
 
-GitHub Actions downloads the publicly shared workbook during deployment, normalizes it into `public/data/workbook.json`, and publishes that JSON with the static React site. The browser does not call Google Sheets directly. Week views supplement pending workbook games with display-only live scores from ESPN.
+GitHub Actions downloads the publicly shared workbook during deployment, normalizes it into `public/data/workbook.json`, and publishes that JSON with the static React site. On every page load, the browser checks Google Sheets' public revision marker. It reuses a matching normalized copy from local browser storage or downloads and normalizes the latest public `.xlsx` export when the revision changed. Week views supplement pending workbook games with display-only live scores from ESPN.
 
 ```text
-Google Sheet → GitHub Actions importer → normalized JSON → React build → GitHub Pages
+Google Sheet revision → browser cache check → cached JSON or fresh public XLSX → React app
+Google Sheet → GitHub Actions importer → bundled JSON fallback → GitHub Pages
 ESPN scoreboards → browser-side matchup finder → pending game cards
 ```
 
-The checked-in JSON is a development snapshot generated from the supplied 2026 workbook. Scheduled deployments replace it with current Google Sheets data.
+The checked-in JSON is a development and first-visit snapshot. Scheduled deployments replace it with current Google Sheets data, while the browser-side revision check keeps the running app current between deployments.
 
 ## Local development
 
@@ -52,7 +53,9 @@ GOOGLE_SHEET_URL='https://docs.google.com/spreadsheets/d/…/edit' \
 npm run data:import
 ```
 
-The importer downloads the public `.xlsx` export, validates the resulting contract, and writes the normalized data to `public/data/workbook.json`.
+The importer downloads a stable public `.xlsx` export, validates the resulting contract, and writes the normalized data to `public/data/workbook.json`. It also writes the lightweight `public/data/workbook-meta.json` revision manifest used during startup.
+
+Google's anonymous public export does not provide a standard `Last-Modified` or `ETag` header. The app therefore uses the sheet's public monotonic revision number as the freshness value. If that check is ever unavailable, startup bypasses the browser cache and downloads the workbook rather than silently showing stale data.
 
 ## Live scores
 

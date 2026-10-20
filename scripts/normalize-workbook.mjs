@@ -1,11 +1,8 @@
 import fs from "node:fs/promises";
-import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-
-const require = createRequire(import.meta.url);
-const { normalizeWorkbook, validateWorkbook } = require("./lib/workbook-parser.cjs");
+import { normalizeWorkbook, validateWorkbook } from "../src/data/workbookParser.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const inputPath = path.resolve(process.argv[2] || path.join(projectRoot, "raw-workbook.json"));

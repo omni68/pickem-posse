@@ -1,6 +1,6 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
-const { discoverBettorBlocks, normalizeWorkbook, validateWorkbook } = require("./workbook-parser.cjs");
+import test from "node:test";
+import assert from "node:assert/strict";
+import { discoverBettorBlocks, normalizeWorkbook, validateWorkbook } from "../../src/data/workbookParser.mjs";
 
 function matrix(rows, columns) {
   return Array.from({ length: rows }, () => Array(columns).fill(null));
