@@ -94,11 +94,18 @@ test('loads the scoreboard and exposes workbook navigation', async () => {
 
   fireEvent.mouseDown(screen.getByLabelText('View and sort by'));
   expect(await screen.findByRole('option', { name: 'Earnings $' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Amount Paid $' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Return on Amount Paid %' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Performance vs. Field' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Contrarian King' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Participation Rate' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Best Payout $' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Worst Payout $' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Best Pick %' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Worst Pick %' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Closest Exact Score' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Average Exact-Score Error' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Longest Heater' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('option', { name: 'Closest Exact Score' }));
   expect(screen.getByRole('columnheader', { name: 'Closest Exact Score' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Sort descending' })).toBeInTheDocument();

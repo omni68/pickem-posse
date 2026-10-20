@@ -24,9 +24,9 @@ test('calculates individualized ATS accuracy using each player’s actual pick c
   const scoreboard = {
     data: {
       players: [
-        { player: cell('Alex'), quitter: cell(''), totalWinnings: cell(100), totalPayout: cell(200) },
-        { player: cell('Bailey'), quitter: cell('Yes'), totalWinnings: cell(50), totalPayout: cell(125) },
-        { player: cell('Casey'), quitter: cell(''), totalWinnings: cell(0), totalPayout: cell(75) },
+        { player: cell('Alex'), quitter: cell(''), amountPaid: cell(150), totalWinnings: cell(100), totalPayout: cell(200) },
+        { player: cell('Bailey'), quitter: cell('Yes'), amountPaid: cell(100), totalWinnings: cell(50), totalPayout: cell(125) },
+        { player: cell('Casey'), quitter: cell(''), amountPaid: cell(''), totalWinnings: cell(0), totalPayout: cell(75) },
       ],
     },
   };
@@ -49,9 +49,9 @@ test('calculates individualized ATS accuracy using each player’s actual pick c
   }];
 
   const analytics = buildPlayerAnalytics(scoreboard, weeks);
-  expect(analytics.find((player) => player.player === 'Alex')).toMatchObject({ totalPayout: 200, totalEarnings: 100, totalPicks: 2, correctPicks: 1, correctPickPercentage: 50 });
-  expect(analytics.find((player) => player.player === 'Bailey')).toMatchObject({ quitter: true, totalPicks: 1, correctPicks: 1, correctPickPercentage: 100 });
-  expect(analytics.find((player) => player.player === 'Casey')).toMatchObject({ totalPicks: 0, correctPickPercentage: null });
+  expect(analytics.find((player) => player.player === 'Alex')).toMatchObject({ amountPaid: 150, totalPayout: 200, totalEarnings: 100, totalPicks: 2, correctPicks: 1, correctPickPercentage: 50 });
+  expect(analytics.find((player) => player.player === 'Bailey')).toMatchObject({ amountPaid: 100, quitter: true, totalPicks: 1, correctPicks: 1, correctPickPercentage: 100 });
+  expect(analytics.find((player) => player.player === 'Casey')).toMatchObject({ amountPaid: 0, totalPicks: 0, correctPickPercentage: null });
 });
 
 test('finds each player’s best and worst single-week pick percentages', () => {
@@ -221,4 +221,102 @@ test('finds each player’s closest finalized Game-of-the-Week score prediction'
   expect(analytics.find((player) => player.player === 'Casey')).toMatchObject({
     closestExactScore: null,
   });
+});
+
+test('calculates ROI, field performance, contrarian wins, participation, exact-score average, and heaters', () => {
+  const scoreboard = {
+    data: {
+      players: [
+        { player: cell('Alex'), quitter: cell(''), amountPaid: cell(100), totalWinnings: cell(50), totalPayout: cell(150) },
+        { player: cell('Bailey'), quitter: cell(''), amountPaid: cell(200), totalWinnings: cell(-20), totalPayout: cell(180) },
+        { player: cell('Casey'), quitter: cell(''), amountPaid: cell(0), totalWinnings: cell(0), totalPayout: cell(0) },
+      ],
+    },
+  };
+  const game = (date, away, home, winner, picks, extra = {}) => ({
+    date: cell(date),
+    time: cell('1899-12-30T12:00:00.000Z'),
+    away: cell(away),
+    home: cell(home),
+    winner: cell(winner),
+    picks: picks.map(([player, side]) => ({ bettor: cell(player), side })),
+    ...extra,
+  });
+  const weeks = [
+    {
+      title: 'Week 1',
+      data: {
+        games: [
+          game('2026-09-01T00:00:00.000Z', 'Away A', 'Home A', 'Away A', [['Alex', 'away'], ['Bailey', 'home']], {
+            isGameOfTheWeek: true,
+            scoreAway: cell(21),
+            scoreHome: cell(17),
+          }),
+          game('2026-09-02T00:00:00.000Z', 'Away B', 'Home B', 'Home B', [['Alex', 'away'], ['Bailey', 'home'], ['Casey', 'away']]),
+          game('2026-09-03T00:00:00.000Z', 'Away C', 'Home C', '', [['Alex', 'away'], ['Casey', 'away']]),
+        ],
+        bettors: [
+          { player: cell('Alex'), awayPrediction: cell(20), homePrediction: cell(17) },
+          { player: cell('Bailey'), awayPrediction: cell(14), homePrediction: cell(10) },
+          { player: cell('Casey'), awayPrediction: cell(''), homePrediction: cell('') },
+        ],
+      },
+    },
+    {
+      title: 'Week 2',
+      data: {
+        games: [
+          game('2026-09-08T00:00:00.000Z', 'Away D', 'Home D', 'Away D', [['Alex', 'away'], ['Bailey', 'away'], ['Casey', 'home']], {
+            isGameOfTheWeek: true,
+            scoreAway: cell(30),
+            scoreHome: cell(27),
+          }),
+          game('2026-09-09T00:00:00.000Z', 'Away E', 'Home E', 'Home E', [['Alex', 'home'], ['Bailey', 'away'], ['Casey', 'home']]),
+        ],
+        bettors: [
+          { player: cell('Alex'), awayPrediction: cell(28), homePrediction: cell(24) },
+          { player: cell('Bailey'), awayPrediction: cell(29), homePrediction: cell(27) },
+          { player: cell('Casey'), awayPrediction: cell(31), homePrediction: cell(28) },
+        ],
+      },
+    },
+  ];
+
+  const analytics = buildPlayerAnalytics(scoreboard, weeks);
+  const alex = analytics.find((player) => player.player === 'Alex');
+  const bailey = analytics.find((player) => player.player === 'Bailey');
+  const casey = analytics.find((player) => player.player === 'Casey');
+
+  expect(alex).toMatchObject({
+    returnOnAmountPaid: 50,
+    contrarianWins: 0,
+    participationPicks: 5,
+    participationOpportunities: 5,
+    participationRate: 100,
+    averageExactScoreError: 3,
+    exactScorePredictionCount: 2,
+    longestHeater: 2,
+  });
+  expect(alex.performanceVsField).toBeCloseTo(32.142857);
+
+  expect(bailey).toMatchObject({
+    returnOnAmountPaid: -10,
+    contrarianWins: 1,
+    contrarianPicks: 2,
+    participationPicks: 4,
+    participationOpportunities: 5,
+    participationRate: 80,
+    averageExactScoreError: 7.5,
+    longestHeater: 2,
+  });
+  expect(bailey.performanceVsField).toBeCloseTo(-7.142857);
+
+  expect(casey).toMatchObject({
+    returnOnAmountPaid: null,
+    participationRate: 80,
+    averageExactScoreError: 2,
+    exactScorePredictionCount: 1,
+    longestHeater: 1,
+  });
+  expect(casey.performanceVsField).toBeCloseTo(-33.333333);
 });

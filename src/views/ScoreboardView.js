@@ -34,25 +34,117 @@ const rankColor = (index) => (['#E9652B', '#73809A', '#A96C3D'][index] || '#E9ED
 const standingsMetrics = [
   { key: 'totalPayout', label: 'Payout $' },
   { key: 'totalEarnings', label: 'Earnings $' },
+  { key: 'amountPaid', label: 'Amount Paid $' },
+  { key: 'returnOnAmountPaid', label: 'Return on Amount Paid %' },
+  { key: 'performanceVsField', label: 'Performance vs. Field' },
+  { key: 'contrarianWins', label: 'Contrarian King' },
+  { key: 'participationRate', label: 'Participation Rate' },
   { key: 'bestPayout', label: 'Best Payout $' },
   { key: 'worstPayout', label: 'Worst Payout $' },
   { key: 'correctPickPercentage', label: 'Correct Pick %' },
   { key: 'bestPickPercentage', label: 'Best Pick %' },
   { key: 'worstPickPercentage', label: 'Worst Pick %' },
   { key: 'closestExactScore', label: 'Closest Exact Score' },
+  { key: 'averageExactScoreError', label: 'Average Exact-Score Error' },
+  { key: 'longestHeater', label: 'Longest Heater' },
 ];
 
 const defaultOrderForMetric = (metricKey) => (
   metricKey === 'worstPickPercentage'
   || metricKey === 'worstPayout'
   || metricKey === 'closestExactScore'
+  || metricKey === 'averageExactScoreError'
     ? 'asc'
     : 'desc'
 );
 
 const currencyValue = (value) => formatCurrency({ raw: value, display: String(value) });
+const percentageValue = (value, signed = false) => {
+  if (value == null) return '—';
+  const prefix = signed && value > 0 ? '+' : '';
+  return `${prefix}${value.toFixed(1)}%`;
+};
 
 function MetricValue({ metric, player }) {
+  if (metric.key === 'returnOnAmountPaid') {
+    return (
+      <Box>
+        <Typography fontWeight={800}>{percentageValue(player.returnOnAmountPaid)}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+          {player.returnOnAmountPaid == null
+            ? 'No amount paid'
+            : `${currencyValue(player.totalEarnings)} earnings on ${currencyValue(player.amountPaid)} paid`}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (metric.key === 'performanceVsField') {
+    return (
+      <Box>
+        <Typography fontWeight={800}>
+          {player.performanceVsField == null ? '—' : `${percentageValue(player.performanceVsField, true)} pts`}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+          {player.performanceVsField == null
+            ? 'No comparable finalized picks'
+            : `Player ${percentageValue(player.playerComparisonPercentage)} · Field ${percentageValue(player.fieldComparisonPercentage)}`}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (metric.key === 'contrarianWins') {
+    return (
+      <Box>
+        <Typography fontWeight={800}>{player.contrarianWins} {player.contrarianWins === 1 ? 'win' : 'wins'}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          {player.contrarianPicks
+            ? `${player.contrarianWins}/${player.contrarianPicks} minority-side picks won`
+            : 'No minority-side picks'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (metric.key === 'participationRate') {
+    return (
+      <Box>
+        <Typography fontWeight={800}>{percentageValue(player.participationRate)}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          {player.participationOpportunities
+            ? `${player.participationPicks}/${player.participationOpportunities} picks submitted`
+            : 'No participating weeks'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (metric.key === 'averageExactScoreError') {
+    const error = player.averageExactScoreError;
+    return (
+      <Box>
+        <Typography fontWeight={800}>{error == null ? '—' : `${error.toFixed(1)} points off`}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          {error == null
+            ? 'No finalized predictions'
+            : `${player.exactScorePredictionCount} final ${player.exactScorePredictionCount === 1 ? 'prediction' : 'predictions'}`}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (metric.key === 'longestHeater') {
+    return (
+      <Box>
+        <Typography fontWeight={800}>{player.longestHeater} {player.longestHeater === 1 ? 'pick' : 'picks'}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          {player.longestHeater ? 'Consecutive correct picks' : 'No correct-pick streak'}
+        </Typography>
+      </Box>
+    );
+  }
+
   if (metric.key === 'closestExactScore') {
     const difference = player.closestExactScore;
     return (
