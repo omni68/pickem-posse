@@ -119,3 +119,39 @@ test('labels the spreadsheet ATS winner as covered', () => {
 
   expect(screen.getByText('Covered')).toBeInTheDocument();
 });
+
+test('lists weekly participants who are missing a pick for the game', () => {
+  const game = {
+    row: 9,
+    date: cell('2026-10-17T00:00:00.000Z'),
+    time: cell('1899-12-30T14:30:00.000Z'),
+    away: cell('Penn State'),
+    home: cell('Michigan'),
+    homeSpread: cell(-6.5),
+    dollarsAway: cell(10),
+    dollarsHome: cell(10),
+    scoreAway: cell(''),
+    scoreHome: cell(''),
+    winner: cell(''),
+    picks: [
+      { bettor: cell('Alex'), side: 'away', payout: cell('') },
+      { bettor: cell('Bailey'), side: null, payout: cell('') },
+      { bettor: cell('Casey'), side: 'home', payout: cell('') },
+    ],
+    isGameOfTheWeek: false,
+  };
+
+  render(
+    <ThemeProvider theme={theme}>
+      <GameCard
+        game={game}
+        selectedBettor="all"
+        weeklyPlayers={['Alex', 'Bailey', 'Casey']}
+        onChooseLiveScore={jest.fn()}
+      />
+    </ThemeProvider>,
+  );
+
+  expect(screen.getByText('Missing Pick:')).toBeInTheDocument();
+  expect(screen.getByText('Bailey')).toBeInTheDocument();
+});

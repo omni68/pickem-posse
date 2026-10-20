@@ -42,7 +42,9 @@ import {
   atsSpreads,
   exactScoreWinners,
   jackpotRolloverWeeks,
+  missingPlayersForGame,
   sortGamesByStatusAndStart,
+  weeklyPlayersWithPicks,
 } from '../data/week';
 import useLiveScores from '../hooks/useLiveScores';
 
@@ -289,9 +291,11 @@ export function GameCard({
   liveScoresReady,
   liveScoreError,
   onChooseLiveScore,
+  weeklyPlayers = [],
 }) {
   const awayPicks = game.picks.filter((pick) => pick.side === 'away');
   const homePicks = game.picks.filter((pick) => pick.side === 'home');
+  const missingPlayers = missingPlayersForGame(game, weeklyPlayers);
   const bettorPick = game.picks.find((pick) => pick.bettor.display === selectedBettor);
   const final = game.winner.display !== '';
   const liveEvent = final ? null : liveMatch?.event;
@@ -359,9 +363,12 @@ export function GameCard({
         </Box>
 
         <Divider sx={{ my: 1.25 }} />
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.5, sm: 2 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}><strong>Away:</strong> {awayPicks.map((pick) => pick.bettor.display).join(', ') || 'No picks'}</Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}><strong>Home:</strong> {homePicks.map((pick) => pick.bettor.display).join(', ') || 'No picks'}</Typography>
+        <Stack spacing={0.5}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.5, sm: 2 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}><strong>Away:</strong> {awayPicks.map((pick) => pick.bettor.display).join(', ') || 'No picks'}</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}><strong>Home:</strong> {homePicks.map((pick) => pick.bettor.display).join(', ') || 'No picks'}</Typography>
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}><strong>Missing Pick:</strong> {missingPlayers.join(', ') || 'None'}</Typography>
         </Stack>
 
         {game.isGameOfTheWeek && (
@@ -413,6 +420,8 @@ export default function WeekView({ tab, workbook }) {
   const [matchingGame, setMatchingGame] = useState(null);
   const activeBettor = useMemo(() => bettors.find((bettor) => bettor.player.display === selectedBettor), [bettors, selectedBettor]);
   const orderedGames = useMemo(() => sortGamesByStatusAndStart(games), [games]);
+  const weeklyPlayers = useMemo(() => weeklyPlayersWithPicks(games), [games]);
+  const playerCount = weeklyPlayers.length;
   const finalGames = games.filter((game) => game.winner.display !== '').length;
   const liveScores = useLiveScores({
     games,
@@ -456,7 +465,7 @@ export default function WeekView({ tab, workbook }) {
 
       <Grid container spacing={1.5}>
         <Grid item xs={12} sm={4}><MetricCard label="Games" value={`${finalGames}/${games.length} final`} icon={<SportsFootballRoundedIcon />} color="primary.light" /></Grid>
-        <Grid item xs={12} sm={4}><MetricCard label="Players" value={String(bettors.length)} icon={<Groups2RoundedIcon />} /></Grid>
+        <Grid item xs={12} sm={4}><MetricCard label="Players (w/picks)" value={String(playerCount)} icon={<Groups2RoundedIcon />} /></Grid>
         <Grid item xs={12} sm={4}><MetricCard label="Jackpot" value={formatCurrency(summary.jackpotTotal)} icon={<SavingsRoundedIcon />} color="success.main" /></Grid>
       </Grid>
 
@@ -485,6 +494,7 @@ export default function WeekView({ tab, workbook }) {
             liveScoresReady={liveScores.hasLoaded}
             liveScoreError={liveScores.error}
             onChooseLiveScore={setMatchingGame}
+            weeklyPlayers={weeklyPlayers}
           />
         ))}
       </Stack>

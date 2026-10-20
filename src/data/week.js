@@ -79,6 +79,35 @@ export const sortGamesByStatusAndStart = (games = []) => [...games].sort((left, 
   return (left.index ?? left.row ?? 0) - (right.index ?? right.row ?? 0);
 });
 
+const normalizedPlayerName = (player) => String(player || '').trim().toLowerCase();
+
+export const weeklyPlayersWithPicks = (games = []) => {
+  const playersWithPicks = new Map();
+
+  for (const game of games) {
+    for (const pick of game?.picks || []) {
+      if (!pick?.side) continue;
+      const player = String(pick.bettor?.display || pick.bettor?.raw || '').trim();
+      const key = normalizedPlayerName(player);
+      if (key && !playersWithPicks.has(key)) playersWithPicks.set(key, player);
+    }
+  }
+
+  return [...playersWithPicks.values()].sort((left, right) => left.localeCompare(right));
+};
+
+export const weeklyPlayerCount = (games = []) => weeklyPlayersWithPicks(games).length;
+
+export const missingPlayersForGame = (game, weeklyPlayers = []) => {
+  const playersWithGamePicks = new Set(
+    (game?.picks || [])
+      .filter((pick) => pick?.side)
+      .map((pick) => normalizedPlayerName(pick.bettor?.display || pick.bettor?.raw)),
+  );
+
+  return weeklyPlayers.filter((player) => !playersWithGamePicks.has(normalizedPlayerName(player)));
+};
+
 export const gameOfTheWeek = (tab) => tab?.data?.games?.find((game) => game.isGameOfTheWeek);
 
 export const exactScoreWinners = (tab) => {

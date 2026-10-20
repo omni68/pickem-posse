@@ -4,7 +4,10 @@ import {
   atsSpreads,
   exactScoreWinners,
   jackpotRolloverWeeks,
+  missingPlayersForGame,
   sortGamesByStatusAndStart,
+  weeklyPlayerCount,
+  weeklyPlayersWithPicks,
 } from './week';
 
 const cell = (raw) => ({ raw, display: raw === '' ? '' : String(raw) });
@@ -75,6 +78,29 @@ test('sorts pending games first and orders each status chronologically', () => {
 
   expect(sortGamesByStatusAndStart(games).map((game) => game.row)).toEqual([3, 2, 4, 1]);
   expect(games.map((game) => game.row)).toEqual([1, 2, 3, 4]);
+});
+
+test('counts only unique players who made at least one pick that week', () => {
+  const games = [
+    {
+      picks: [
+        { bettor: cell('Alex'), side: 'away' },
+        { bettor: cell('Bailey'), side: null },
+        { bettor: cell('Casey'), side: 'home' },
+      ],
+    },
+    {
+      picks: [
+        { bettor: cell('Alex'), side: 'home' },
+        { bettor: cell('Bailey'), side: '' },
+        { bettor: cell('casey'), side: 'away' },
+      ],
+    },
+  ];
+
+  expect(weeklyPlayerCount(games)).toBe(2);
+  expect(weeklyPlayersWithPicks(games)).toEqual(['Alex', 'Casey']);
+  expect(missingPlayersForGame(games[0], ['Alex', 'Bailey', 'Casey'])).toEqual(['Bailey']);
 });
 
 test('finds every bettor with the exact Game-of-the-Week score', () => {
