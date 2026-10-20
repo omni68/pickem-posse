@@ -252,20 +252,23 @@ export const fetchEspnScoreboards = async (games, { fetcher = fetch, signal } = 
 export const formatEspnKickoff = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Kickoff TBD';
-  return new Intl.DateTimeFormat('en-US', {
+  const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: CENTRAL_TIME_ZONE,
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: 'short',
-  }).format(date);
+    hour12: true,
+  }).formatToParts(date).reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
+  const minute = parts.minute === '00' ? '' : `:${parts.minute}`;
+  return `${parts.weekday} ${parts.month} ${parts.day}, ${parts.year} @ ${parts.hour}${minute}${parts.dayPeriod.toLowerCase()} CDT`;
 };
 
 export const liveStatusLabel = (event) => {
   if (!event) return '';
   if (event.status.state === 'in') return event.status.shortDetail || event.status.detail || 'Live';
   if (event.status.state === 'post' || event.status.completed) return 'Final';
-  return event.status.shortDetail || event.status.detail || 'Scheduled';
+  return 'Scheduled';
 };

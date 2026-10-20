@@ -82,5 +82,5 @@ export const formatGameStart = (dateValue, timeValue) => {
   const hour = time.hours % 12 || 12;
   const minute = time.minutes ? `:${String(time.minutes).padStart(2, '0')}` : '';
   const meridiem = time.hours >= 12 ? 'pm' : 'am';
-  return `${dateLabel} @ ${hour}${minute}${meridiem}`;
+  return `${dateLabel} @ ${hour}${minute}${meridiem} CDT`;
 };

@@ -71,6 +71,7 @@ test('highlights the live ATS leader without covering game information', () => {
   };
   const liveEvent = {
     league: 'nfl',
+    startTime: '2026-10-18T17:00:00.000Z',
     away: { score: '17' },
     home: { score: '20' },
     status: { state: 'in', completed: false, shortDetail: '4:12 - 4th' },
@@ -92,6 +93,7 @@ test('highlights the live ATS leader without covering game information', () => {
   expect(watermark.parentElement).toHaveStyle('background-color: rgba(88, 204, 112, 0.34)');
   expect(screen.getByText('Baltimore')).toBeInTheDocument();
   expect(screen.getByText('17')).toBeInTheDocument();
+  expect(screen.getByText('Sun Oct 18, 2026 @ 12pm CDT')).toBeInTheDocument();
 });
 
 test('labels the spreadsheet ATS winner as covered', () => {

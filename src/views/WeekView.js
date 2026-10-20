@@ -302,6 +302,9 @@ export function GameCard({
   const liveInProgress = liveEvent?.status.state === 'in';
   const liveIsFinal = liveEvent?.status.state === 'post' || liveEvent?.status.completed;
   const liveScoreAvailable = liveInProgress || liveIsFinal;
+  const kickoffLabel = liveEvent?.startTime
+    ? formatEspnKickoff(liveEvent.startTime)
+    : formatGameStart(game.date, game.time);
   const awayScore = liveScoreAvailable ? liveEvent.away.score : showCell(game.scoreAway, '');
   const homeScore = liveScoreAvailable ? liveEvent.home.score : showCell(game.scoreHome, '');
   const coveringSide = final
@@ -322,7 +325,7 @@ export function GameCard({
       <CardContent sx={{ p: { xs: 2, sm: 2.75 } }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={{ xs: 1.25, sm: 2 }}>
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="overline" color="text.secondary" fontWeight={800} sx={{ display: 'block', lineHeight: 1.45, whiteSpace: 'normal' }}>{formatGameStart(game.date, game.time)}</Typography>
+            <Typography variant="overline" color="text.secondary" fontWeight={800} sx={{ display: 'block', lineHeight: 1.45, whiteSpace: 'normal' }}>{kickoffLabel}</Typography>
             <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
               {!liveEvent && <Chip size="small" color={final ? 'default' : 'warning'} label={final ? 'Final' : 'Pending'} />}
               {liveEvent && (

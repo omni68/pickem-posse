@@ -3,6 +3,8 @@ import {
   confirmedEventIsValid,
   espnTeamAliases,
   fetchEspnScoreboards,
+  formatEspnKickoff,
+  liveStatusLabel,
   matchGameToEvents,
   normalizeTeamName,
   scoreboardDatesForGames,
@@ -48,6 +50,13 @@ test('normalizes spreadsheet names and builds aliases entirely from ESPN team fi
 test('compares ESPN UTC kickoffs as Central wall-clock values', () => {
   expect(centralWallTimestamp('2026-10-18T17:00:00.000Z')).toBe(Date.UTC(2026, 9, 18, 12, 0));
   expect(scoreboardDatesForGames([game])).toEqual(['20261017', '20261018', '20261019']);
+  expect(formatEspnKickoff('2026-10-18T17:00:00.000Z')).toBe('Sun Oct 18, 2026 @ 12pm CDT');
+});
+
+test('does not display ESPN scheduled timestamps in their source timezone', () => {
+  expect(liveStatusLabel({
+    status: { state: 'pre', shortDetail: '10/22 - 8:15 PM EDT' },
+  })).toBe('Scheduled');
 });
 
 test('automatically matches a unique date, away team, and home team', () => {
